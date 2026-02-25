@@ -1,0 +1,28 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Devis réparations{% endblock %}
+
+{% block content %}
+    <h1>Devis de réparations</h1>
+
+    <p>
+        {{ bailleur.name }}{% if bailleur.entreprise %} ({{ bailleur.entreprise }}){% endif %}
+        vous envoie le devis des réparations suite à l'état des lieux de sortie.
+    </p>
+
+    <div class="info-box">
+        <strong>Logement :</strong> {{ logement.nom }}<br>
+        <strong>Adresse :</strong> {{ logement.adresse }}, {{ logement.codePostal }} {{ logement.ville }}<br>
+        <strong>Locataire :</strong> {{ edl.locataireNom }}<br>
+        <strong>Date de sortie :</strong> {{ edl.dateRealisation|date('d/m/Y') }}
+    </div>
+
+    <div class="info-box">
+        <strong>{{ nbLignes }} ligne{{ nbLignes > 1 ? 's' : '' }} de devis</strong><br>
+        <strong>Total TTC :</strong> {{ totalTTC|number_format(2, ',', ' ') }} &euro;
+    </div>
+
+    <p>
+        Vous trouverez le devis détaillé en pièce jointe de cet email (format PDF).
+    </p>
+{% endblock %}

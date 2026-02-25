@@ -1,0 +1,35 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Confirmation de signature{% endblock %}
+
+{% block content %}
+    <h1>État des lieux signé</h1>
+
+    <p>
+        L'état des lieux {{ edl.type == 'entree' ? "d'entrée" : "de sortie" }} a été signé par toutes les parties.
+    </p>
+
+    <div class="info-box">
+        <strong>Logement :</strong> {{ logement.nom }}<br>
+        <strong>Adresse :</strong> {{ logement.adresse }}, {{ logement.codePostal }} {{ logement.ville }}<br>
+        <strong>Date de réalisation :</strong> {{ edl.dateRealisation|date('d/m/Y') }}<br>
+        <strong>Locataire :</strong> {{ edl.locataireNom }}
+    </div>
+
+    <h2 style="font-size: 18px; margin-top: 25px;">Signatures</h2>
+
+    <div class="info-box">
+        <strong>Bailleur :</strong> {{ bailleur.name }}<br>
+        <span style="color: #059669;">Signé le {{ edl.dateSignatureBailleur|date('d/m/Y à H:i') }}</span>
+    </div>
+
+    <div class="info-box">
+        <strong>Locataire :</strong> {{ edl.locataireNom }}<br>
+        <span style="color: #059669;">Signé le {{ edl.dateSignatureLocataire|date('d/m/Y à H:i') }}</span>
+    </div>
+
+    <p style="margin-top: 25px;">
+        Ce document a valeur de preuve. Vous pouvez télécharger le PDF de l'état des lieux
+        depuis votre espace Edlya.
+    </p>
+{% endblock %}

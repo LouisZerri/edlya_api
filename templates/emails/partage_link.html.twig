@@ -1,0 +1,23 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}État des lieux partagé{% endblock %}
+
+{% block content %}
+    <h1>Un état des lieux a été partagé avec vous</h1>
+
+    <p>
+        {{ bailleur.name }}{% if bailleur.entreprise %} ({{ bailleur.entreprise }}){% endif %}
+        vous a partagé un état des lieux {{ edl.type == 'entree' ? "d'entrée" : "de sortie" }}.
+    </p>
+
+    <div class="info-box">
+        <strong>Logement :</strong> {{ logement.nom }}<br>
+        <strong>Adresse :</strong> {{ logement.adresse }}, {{ logement.codePostal }} {{ logement.ville }}<br>
+        <strong>Date :</strong> {{ edl.dateRealisation|date('d/m/Y') }}<br>
+        <strong>Locataire :</strong> {{ edl.locataireNom }}
+    </div>
+
+    <p>
+        Vous trouverez l'état des lieux complet en pièce jointe de cet email (format PDF).
+    </p>
+{% endblock %}

@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>État des lieux - {{ logement.nom }}</title>
+    <style>
+        @page {
+            margin: 20mm 10mm 30mm 10mm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 10px;
+            line-height: 1.5;
+            color: #1a1a1a;
+        }
+
+        /* Wrapper principal */
+        .content-wrapper {
+            padding: 5px 20px 100px 20px;
+        }
+
+        /* Paraphes en bas de chaque page */
+        .paraphes-footer {
+            position: fixed;
+            bottom: 25mm;
+            left: 10mm;
+            right: 10mm;
+            height: 60px;
+            border-top: 1px solid #e2e8f0;
+            background: #fff;
+            padding: 5px 10px;
+        }
+
+        .paraphes-container {
+            display: table;
+            width: 100%;
+        }
+
+        .paraphe-box {
+            display: table-cell;
+            width: 50%;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .paraphe-box .label {
+            font-size: 7px;
+            color: #94a3b8;
+            margin-bottom: 2px;
+        }
+
+        .paraphe-box img {
+            max-height: 28px;
+            max-width: 70px;
+        }
+
+        .paraphe-box .date {
+            font-size: 6px;
+            color: #94a3b8;
+        }
+
+        /* Footer fixe */
+        .page-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px 15mm;
+            font-size: 8px;
+            border-top: 1px solid #4f46e5;
+            background: #fff;
+        }
+
+        .footer-brand {
+            color: #4f46e5;
+            font-weight: bold;
+        }
+
+        .footer-sub {
+            color: #4f46e5;
+        }
+
+        .footer-app {
+            color: #666;
+        }
+
+        .header-top {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .header-left {
+            display: table-cell;
+            width: 70%;
+            vertical-align: top;
+        }
+
+        .header-right {
+            display: table-cell;
+            width: 30%;
+            vertical-align: top;
+            text-align: right;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1a1a1a;
+            margin-bottom: 5px;
+        }
+
+        .header-subtitle {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .header-dates {
+            font-size: 10px;
+            margin-bottom: 5px;
+        }
+
+        .logo-container {
+            text-align: right;
+        }
+
+        .info-box {
+            border: 1px solid #ddd;
+            padding: 8px;
+            font-size: 8px;
+            margin-top: 10px;
+            text-align: left;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1a1a1a;
+            border-bottom: 1px solid #1a1a1a;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            padding-top: 25px;
+        }
+
+        .section-title-first {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1a1a1a;
+            border-bottom: 1px solid #1a1a1a;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            padding-top: 0;
+        }
+
+        .info-row {
+            margin-bottom: 3px;
+            font-size: 10px;
+        }
+
+        .info-label {
+            display: inline-block;
+            width: 110px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 9px;
+        }
+
+        table th {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 6px 5px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 8px;
+        }
+
+        table td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            vertical-align: top;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        /* Couleurs des états */
+        .etat-neuf {
+            background: #dcfce7;
+            color: #166534;
+            font-weight: bold;
+        }
+
+        .etat-tres_bon {
+            background: #d1fae5;
+            color: #065f46;
+            font-weight: bold;
+        }
+
+        .etat-bon {
+            background: #dbeafe;
+            color: #1e40af;
+            font-weight: bold;
+        }
+
+        .etat-usage {
+            background: #fef3c7;
+            color: #92400e;
+            font-weight: bold;
+        }
+
+        .etat-mauvais {
+            background: #fed7aa;
+            color: #c2410c;
+            font-weight: bold;
+        }
+
+        .etat-hors_service {
+            background: #fee2e2;
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        .photo-ref {
+            display: inline-block;
+            background: #d4edda;
+            color: #155724;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 7px;
+            margin: 1px;
+        }
+
+        .piece-title {
+            font-weight: bold;
+            font-size: 12px;
+            margin: 0 0 10px;
+            text-transform: uppercase;
+            color: #1a1a1a;
+            border-bottom: 1px solid #1a1a1a;
+            padding-bottom: 5px;
+            padding-top: 25px;
+        }
+
+        .piece-title-first {
+            font-weight: bold;
+            font-size: 12px;
+            margin: 0 0 10px;
+            text-transform: uppercase;
+            color: #1a1a1a;
+            border-bottom: 1px solid #1a1a1a;
+            padding-bottom: 5px;
+            padding-top: 0;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        .photos-section {
+            margin-top: 15px;
+        }
+
+        .photo-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .photo-cell {
+            display: table-cell;
+            width: 48%;
+            vertical-align: top;
+            padding-right: 2%;
+            text-align: center;
+        }
+
+        .photo-cell:last-child {
+            padding-right: 0;
+            padding-left: 2%;
+        }
+
+        /* Photo seule - ne pas étaler */
+        .photo-cell.single {
+            width: 48%;
+        }
+
+        .photo-cell.single img {
+            max-width: 250px;
+        }
+
+        .photo-caption {
+            text-align: center;
+            font-size: 9px;
+            margin-bottom: 5px;
+        }
+
+        .photo-caption strong {
+            display: block;
+        }
+
+        .photo-caption span {
+            color: #666;
+            font-size: 8px;
+        }
+
+        .photo-cell img {
+            max-width: 100%;
+            max-height: 180px;
+            border: 1px solid #ddd;
+        }
+
+        /* Encart pas de photo */
+        .no-photo-box {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-top: 20px;
+            color: #64748b;
+        }
+
+        .no-photo-box .icon {
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .no-photo-box .title {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .no-photo-box .subtitle {
+            font-size: 9px;
+        }
+
+        .legal-text {
+            font-size: 9px;
+            line-height: 1.6;
+            text-align: justify;
+            margin-bottom: 10px;
+        }
+
+        .signatures-grid {
+            display: table;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .signature-box {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+            padding: 10px;
+        }
+
+        .signature-box h4 {
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .signature-box p {
+            font-size: 9px;
+            margin-bottom: 3px;
+        }
+
+        .signature-box img {
+            max-height: 50px;
+            max-width: 150px;
+            margin: 10px 0;
+        }
+
+        .signature-date {
+            font-size: 8px;
+            color: #666;
+        }
+
+        .avoid-break {
+            page-break-inside: avoid;
+        }
+
+        .tracabilite {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            font-size: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    {# Paraphes en bas de chaque page (position fixed = répété sur chaque page) #}
+    {% if edl.statut == 'signe' and edl.signatureBailleur and edl.signatureLocataire %}
+        <div class="paraphes-footer">
+            <div class="paraphes-container">
+                <div class="paraphe-box">
+                    <div class="label">Paraphe bailleur</div>
+                    <img src="{{ edl.signatureBailleur }}" alt="Paraphe">
+                    <div class="date">{{ edl.dateSignatureBailleur|date('d/m/Y') }}</div>
+                </div>
+                <div class="paraphe-box">
+                    <div class="label">Paraphe locataire</div>
+                    <img src="{{ edl.signatureLocataire }}" alt="Paraphe">
+                    <div class="date">{{ edl.dateSignatureLocataire|date('d/m/Y') }}</div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Footer fixe #}
+    <div class="page-footer">
+        <span class="footer-brand">EDLYA</span><br>
+        <span class="footer-sub">Propulsé par GEST'IMMO</span><br>
+        <span class="footer-app">État des lieux réalisé à l'aide de l'application Edlya.</span>
+    </div>
+
+    {# WRAPPER PRINCIPAL #}
+    <div class="content-wrapper">
+
+        {# PAGE 1 : En-tête #}
+        <div class="header-top">
+            <div class="header-left">
+                <h1>État des lieux {{ edl.type == 'entree' ? "d'entrée" : 'de sortie' }}</h1>
+                <p class="header-subtitle">
+                    État des lieux contradictoire établi lors de la
+                    {{ edl.type == 'entree' ? 'remise' : 'restitution' }} des clés
+                    {{ edl.type == 'entree' ? 'en début' : 'en fin' }} de bail.
+                </p>
+                <div class="header-dates">
+                    <strong>Date d'établissement :</strong> {{ edl.dateRealisation|date('d/m/Y') }}
+                </div>
+                {% if edl.type == 'sortie' and edlEntree is defined and edlEntree %}
+                    <div class="header-dates">
+                        Date d'état des lieux d'entrée : {{ edlEntree.dateRealisation|date('d/m/Y') }}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="header-right">
+                <div class="logo-container">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICAgIDxwYXRoIGQ9Ik01MCAxMCBMODggNDIgTDg4IDg4IEwxMiA4OCBMMTIgNDIgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGY0NmU1IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTYgNDUgTDUwIDEwIEw5NCA0NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGY0NmU1IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogICAgPGVsbGlwc2UgY3g9IjUwIiBjeT0iNTgiIHJ4PSIyMCIgcnk9IjE0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0ZjQ2ZTUiIHN0cm9rZS13aWR0aD0iNCIvPgogICAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1OCIgcj0iNyIgZmlsbD0iIzRmNDZlNSIvPgo8L3N2Zz4=" alt="Edlya" style="width: 55px; height: 55px;">
+                </div>
+                {% if edl.statut == 'signe' %}
+                    <div class="info-box">
+                        <strong>Ce document est signé électroniquement.</strong><br>
+                        Vérifiez la traçabilité en fin de document.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# BIEN CONCERNÉ #}
+        <div class="section">
+            <div class="section-title-first">Bien concerné</div>
+            <div class="info-row">
+                <span class="info-label">Type :</span>
+                {{ logement.type|default('Appartement')|capitalize }}
+                {% if logement.surface %} - {{ logement.surface }} m²{% endif %}
+                {% if logement.nbPieces %} - {{ logement.nbPieces }} pièces{% endif %}
+            </div>
+            <div class="info-row">
+                <span class="info-label">Adresse :</span>
+                {{ logement.adresse }}, {{ logement.codePostal }} {{ logement.ville }}
+            </div>
+        </div>
+
+        {# LE BAILLEUR #}
+        <div class="section">
+            <div class="section-title-first">Le bailleur</div>
+            <div class="info-row">
+                <span class="info-label">M/Mme :</span>
+                {{ edl.logement.user.nom|default(edl.logement.user.email) }}
+            </div>
+        </div>
+
+        {# LE(S) LOCATAIRE(S) #}
+        <div class="section">
+            <div class="section-title-first">Le(s) locataire(s)</div>
+            <div class="info-row">
+                <span class="info-label">M/Mme :</span>
+                {{ edl.locataireNom }}
+            </div>
+            {% if edl.autresLocataires is defined and edl.autresLocataires %}
+                {% for nom in edl.autresLocataires %}
+                    <div class="info-row">
+                        <span class="info-label">{{ loop.first ? 'Autres :' : '' }}</span>
+                        {{ nom }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <div class="info-row">
+                <span class="info-label">Domiciliation :</span>
+                {{ logement.adresse }}, {{ logement.codePostal }} {{ logement.ville }}
+            </div>
+            {% if edl.locataireEmail %}
+                <div class="info-row">
+                    <span class="info-label">Email :</span>
+                    {{ edl.locataireEmail }}
+                </div>
+            {% endif %}
+            {% if edl.locataireTelephone %}
+                <div class="info-row">
+                    <span class="info-label">Téléphone :</span>
+                    {{ edl.locataireTelephone }}
+                </div>
+            {% endif %}
+        </div>
+
+        {# RELEVÉ DES COMPTEURS #}
+        {% if compteurs|length > 0 %}
+            {% set globalPhotoIndex = 1 %}
+            {% set compteurPhotos = [] %}
+            {% set typesCompteurs = {
+                'electricite': 'ÉLECTRICITÉ',
+                'eau_froide': 'EAU FROIDE',
+                'eau_chaude': 'EAU CHAUDE',
+                'gaz': 'GAZ'
+            } %}
+
+            <div class="page-break">
+                <div class="section-title">Relevé des compteurs</div>
+
+                {% for type, label in typesCompteurs %}
+                    {% set compteur = null %}
+                    {% set compteurEntree = null %}
+                    {% for c in compteurs %}
+                        {% if c.type == type %}
+                            {% set compteur = c %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if edlEntree is defined and edlEntree %}
+                        {% for c in edlEntree.compteurs %}
+                            {% if c.type == type %}
+                                {% set compteurEntree = c %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if compteur %}
+                        <p style="font-weight: bold; margin: 10px 0 5px;">{{ label }}</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 25%;">Numéro de compteur</th>
+                                    <th style="width: 20%;">Relevé Entrée</th>
+                                    <th style="width: 20%;">Relevé Sortie</th>
+                                    <th style="width: 35%;">Observation(s)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="center">{{ compteur.numero|default('-') }}</td>
+                                    <td class="center">{{ compteurEntree ? compteurEntree.indexValue|default('-') : '-' }}</td>
+                                    <td class="center">{{ compteur.indexValue|default('non relevé') }}</td>
+                                    <td>
+                                        {{ compteur.commentaire|default('') }}
+                                        {% if compteur.photos is defined and compteur.photos %}
+                                            {% for photo in compteur.photos %}
+                                                <span class="photo-ref">Photo {{ globalPhotoIndex }}</span>
+                                                {% set compteurPhotos = compteurPhotos|merge([{
+                                                    'index': globalPhotoIndex,
+                                                    'label': label,
+                                                    'path': 'file://' ~ projectDir ~ '/public' ~ photo
+                                                }]) %}
+                                                {% set globalPhotoIndex = globalPhotoIndex + 1 %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    {% endif %}
+                {% endfor %}
+
+                {# Photos compteurs #}
+                {% if compteurPhotos|length > 0 %}
+                    <div class="photos-section">
+                        {% for photoChunk in compteurPhotos|batch(2) %}
+                            <div class="photo-row">
+                                {% for photo in photoChunk %}
+                                    <div class="photo-cell {{ photoChunk|length == 1 ? 'single' : '' }}">
+                                        <div class="photo-caption">
+                                            <strong>Photo {{ photo.index }} - {{ photo.label }}</strong>
+                                            <span>Photo prise lors de l'état des lieux {{ edl.type == 'entree' ? "d'entrée" : 'de sortie' }}</span>
+                                        </div>
+                                        <img src="{{ photo.path }}" alt="Photo">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-photo-box">
+                        <span class="icon">📷</span>
+                        <div class="title">Aucune photo de compteur</div>
+                        <div class="subtitle">Aucune photo n'a été prise pour les compteurs</div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {# ÉTAT DES PIÈCES #}
+        {% set globalPhotoIndex = globalPhotoIndex|default(1) %}
+
+        {% for piece in pieces %}
+            {% set piecePhotos = [] %}
+            {% set pieceEntree = null %}
+            {% if edlEntree is defined and edlEntree %}
+                {% for p in edlEntree.pieces %}
+                    {% if p.nom == piece.nom %}
+                        {% set pieceEntree = p %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            <div class="page-break">
+                <p class="piece-title">{{ piece.nom }}</p>
+
+                {% if piece.elements|length > 0 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 22%;">Élément / Équipement</th>
+                                <th style="width: 17%;">État Entrée</th>
+                                <th style="width: 17%;">État Sortie</th>
+                                <th style="width: 44%;">Observation(s)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for element in piece.elements %}
+                                {% set elementEntree = null %}
+                                {% if pieceEntree %}
+                                    {% for e in pieceEntree.elements %}
+                                        {% if e.nom == element.nom %}
+                                            {% set elementEntree = e %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                                <tr>
+                                    <td>{{ element.nom }}</td>
+                                    <td class="center etat-{{ elementEntree ? elementEntree.etat : '' }}">
+                                        {% if elementEntree %}
+                                            {{ elementEntree.etat|replace({'_': ' '})|capitalize }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="center etat-{{ element.etat }}">
+                                        {{ element.etat|replace({'_': ' '})|capitalize }}
+                                    </td>
+                                    <td>
+                                        {{ element.observations|default('') }}
+                                        {% if element.photos|length > 0 %}
+                                            {% for photo in element.photos %}
+                                                <span class="photo-ref">Photo {{ globalPhotoIndex }}</span>
+                                                {% set piecePhotos = piecePhotos|merge([{
+                                                    'index': globalPhotoIndex,
+                                                    'element': element.nom,
+                                                    'path': 'file://' ~ projectDir ~ '/public' ~ photo.chemin
+                                                }]) %}
+                                                {% set globalPhotoIndex = globalPhotoIndex + 1 %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p style="color: #666; font-style: italic;">Aucun élément enregistré</p>
+                {% endif %}
+
+                {# Photos de la pièce ou encart "pas de photo" #}
+                {% if piecePhotos|length > 0 %}
+                    <div class="photos-section">
+                        {% for photoChunk in piecePhotos|batch(2) %}
+                            <div class="photo-row">
+                                {% for photo in photoChunk %}
+                                    <div class="photo-cell {{ photoChunk|length == 1 ? 'single' : '' }}">
+                                        <div class="photo-caption">
+                                            <strong>Photo {{ photo.index }} - {{ photo.element }}</strong>
+                                            <span>Photo prise lors de l'état des lieux {{ edl.type == 'entree' ? "d'entrée" : 'de sortie' }}</span>
+                                        </div>
+                                        <img src="{{ photo.path }}" alt="Photo">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-photo-box">
+                        <span class="icon">📷</span>
+                        <div class="title">Aucune photo pour cette pièce</div>
+                        <div class="subtitle">Aucune photo n'a été prise pour « {{ piece.nom }} »</div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        {# RESTITUTION DES CLÉS #}
+        {% if cles|length > 0 %}
+            {% set clePhotos = [] %}
+
+            <div class="page-break">
+                <div class="section-title">Restitution des clés</div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Type de clé</th>
+                            <th style="width: 15%;">Nombre Entrée</th>
+                            <th style="width: 15%;">Nombre Sortie</th>
+                            <th style="width: 40%;">Observation(s)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cle in cles %}
+                            {% set cleEntree = null %}
+                            {% if edlEntree is defined and edlEntree %}
+                                {% for c in edlEntree.cles %}
+                                    {% if c.type == cle.type %}
+                                        {% set cleEntree = c %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            <tr>
+                                <td>{{ cle.type|replace({'_': ' '})|capitalize }}</td>
+                                <td class="center">{{ cleEntree ? cleEntree.nombre : '-' }}</td>
+                                <td class="center">{{ cle.nombre }}</td>
+                                <td>
+                                    {{ cle.commentaire|default('') }}
+                                    {% if cle.photo %}
+                                        <span class="photo-ref">Photo {{ globalPhotoIndex }}</span>
+                                        {% set clePhotos = clePhotos|merge([{
+                                            'index': globalPhotoIndex,
+                                            'type': cle.type|replace({'_': ' '})|capitalize,
+                                            'path': 'file://' ~ projectDir ~ '/public' ~ cle.photo
+                                        }]) %}
+                                        {% set globalPhotoIndex = globalPhotoIndex + 1 %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {# Photos clés #}
+                {% if clePhotos|length > 0 %}
+                    <div class="photos-section">
+                        {% for photoChunk in clePhotos|batch(2) %}
+                            <div class="photo-row">
+                                {% for photo in photoChunk %}
+                                    <div class="photo-cell {{ photoChunk|length == 1 ? 'single' : '' }}">
+                                        <div class="photo-caption">
+                                            <strong>Photo {{ photo.index }} - {{ photo.type }}</strong>
+                                            <span>Photo prise lors de l'état des lieux {{ edl.type == 'entree' ? "d'entrée" : 'de sortie' }}</span>
+                                        </div>
+                                        <img src="{{ photo.path }}" alt="Photo">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-photo-box">
+                        <span class="icon">🔑</span>
+                        <div class="title">Aucune photo de clés</div>
+                        <div class="subtitle">Aucune photo n'a été prise pour les clés</div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {# OBSERVATIONS ET CONDITIONS #}
+        <div class="page-break">
+            <div class="section-title">Observations générales et réserves</div>
+
+            <p style="font-weight: bold; margin: 10px 0 5px; text-transform: uppercase;">Observations et réserves</p>
+            <p style="margin-bottom: 15px;">{{ edl.observationsGenerales|default('Aucune observation ni réserve.') }}</p>
+
+            <p style="font-weight: bold; margin: 10px 0 5px; text-transform: uppercase;">Conditions générales</p>
+            <p class="legal-text">
+                Conformément à l'article 3 de la Loi n° 89 – 462 du 6 Juillet 1989, un état des lieux doit être établi contradictoirement entre les parties lors de la remise des clés au locataire, et lors de la restitution de celles-ci.
+            </p>
+            <p class="legal-text">
+                Les cosignataires reconnaissent avoir reçu chacun un exemplaire du présent état des lieux et s'accordent pour y faire référence lors du départ du locataire.
+            </p>
+            <p class="legal-text">
+                Le locataire {{ edl.type == 'sortie' ? 'sortant' : 'entrant' }} ou son représentant est informé que les dégradations ou défauts d'entretien constatés sur le présent état des lieux peuvent relever de son éventuelle responsabilité après comparaison avec l'état des lieux d'entrée. Il reconnaît que des indemnités correspondant à des dégradations ou défauts d'entretien seront imputées sur son dépôt de garantie.
+            </p>
+            <p class="legal-text">
+                Le présent état des lieux établi contradictoirement entre les parties qui le reconnaissent exact, fait partie intégrante du contrat de location dont il ne peut être dissocié.
+            </p>
+            <p class="legal-text" style="margin-top: 15px;">
+                <strong>Ainsi fait contradictoirement et signé à {{ logement.ville }}, le {{ edl.dateRealisation|date('d/m/Y') }}.</strong>
+            </p>
+        </div>
+
+        {# SIGNATURES #}
+        <div class="signatures-grid">
+            <div class="signature-box">
+                <h4>Bailleur</h4>
+                <p>{{ edl.logement.user.nom|default(edl.logement.user.email) }}</p>
+                {% if edl.signatureBailleur %}
+                    <img src="{{ edl.signatureBailleur }}" alt="Signature">
+                    <p class="signature-date">Signé le {{ edl.dateSignatureBailleur|date('d/m/Y') }}</p>
+                {% else %}
+                    <div style="height: 50px; border-bottom: 1px solid #ddd; margin: 20px 0;"></div>
+                {% endif %}
+            </div>
+            <div class="signature-box">
+                <h4>Locataire{{ edl.autresLocataires is defined and edl.autresLocataires ? 's' : '' }}</h4>
+                <p>{{ edl.locataireNom }}</p>
+                {% if edl.autresLocataires is defined and edl.autresLocataires %}
+                    {% for nom in edl.autresLocataires %}
+                        <p>{{ nom }}</p>
+                    {% endfor %}
+                    <p style="font-size: 8px; color: #666; margin-top: 3px;">
+                        Représenté(s) par {{ edl.locataireNom }}
+                    </p>
+                {% endif %}
+                {% if edl.signatureLocataire %}
+                    <img src="{{ edl.signatureLocataire }}" alt="Signature">
+                    <p class="signature-date">Signé le {{ edl.dateSignatureLocataire|date('d/m/Y') }}</p>
+                {% else %}
+                    <div style="height: 50px; border-bottom: 1px solid #ddd; margin: 20px 0;"></div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# TRAÇABILITÉ #}
+        {% if edl.statut == 'signe' and edl.signatureIp is defined and edl.signatureIp %}
+            <div class="tracabilite">
+                <strong>🔒 Traçabilité de la signature électronique</strong><br><br>
+                Document signé conformément aux articles 1366 et 1367 du Code civil.<br><br>
+                <strong>Bailleur :</strong> {{ edl.logement.user.nom|default(edl.logement.user.email) }} - Signé le {{ edl.dateSignatureBailleur|date('d/m/Y à H:i') }}<br>
+                <strong>Locataire :</strong> {{ edl.locataireNom }}{% if edl.autresLocataires is defined and edl.autresLocataires %} (représentant également {{ edl.autresLocataires|join(', ') }}){% endif %} - Signé le {{ edl.dateSignatureLocataire|date('d/m/Y à H:i') }}<br>
+                Email vérifié : {{ edl.locataireEmail }}<br>
+                IP : {{ edl.signatureIp }}
+            </div>
+        {% endif %}
+
+    </div> {# Fin content-wrapper #}
+
+</body>
+</html>

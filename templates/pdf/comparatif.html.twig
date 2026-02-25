@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Comparatif - {{ logement.nom }}</title>
+    <style>
+        @page {
+            margin: 20mm 10mm 25mm 10mm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 10px;
+            line-height: 1.5;
+            color: #1a1a1a;
+        }
+
+        .content-wrapper {
+            padding: 5px 20px 60px 20px;
+        }
+
+        /* Header */
+        .header-top {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #1a1a1a;
+            padding-bottom: 15px;
+        }
+
+        .header-left {
+            display: table-cell;
+            width: 70%;
+            vertical-align: top;
+        }
+
+        .header-right {
+            display: table-cell;
+            width: 30%;
+            vertical-align: top;
+            text-align: right;
+        }
+
+        .header-left h1 {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1a1a1a;
+            margin-bottom: 5px;
+        }
+
+        .header-subtitle {
+            font-size: 10px;
+            color: #666;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1a1a1a;
+            border-bottom: 1px solid #1a1a1a;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        /* Info boxes */
+        .info-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            display: table-cell;
+            width: 50%;
+            padding: 10px;
+            vertical-align: top;
+            border: 1px solid #ddd;
+        }
+
+        .info-box h3 {
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .info-box p {
+            font-size: 9px;
+            margin-bottom: 2px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 9px;
+        }
+
+        th {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 6px 5px;
+            font-weight: bold;
+            text-align: left;
+            text-transform: uppercase;
+            font-size: 8px;
+        }
+
+        td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            vertical-align: top;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        /* État badges */
+        .etat-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 7px;
+            font-weight: bold;
+        }
+
+        .etat-neuf {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .etat-tres_bon {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .etat-bon {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .etat-usage {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .etat-mauvais {
+            background: #fed7aa;
+            color: #c2410c;
+        }
+
+        .etat-hors_service {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        /* Dégradations */
+        .degradation-badge {
+            display: inline-block;
+            font-size: 7px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-right: 2px;
+            margin-bottom: 2px;
+            border: 1px solid #ddd;
+        }
+
+        .degradation-badge-new {
+            background: #fee2e2;
+            color: #dc2626;
+            border-color: #fecaca;
+            font-weight: bold;
+        }
+
+        .text-red {
+            color: #dc2626;
+        }
+
+        .text-green {
+            color: #16a34a;
+        }
+
+        /* Ligne dégradée */
+        .degradation-row {
+            background: #fef2f2;
+        }
+
+        /* Pièces */
+        .piece {
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            page-break-inside: avoid;
+        }
+
+        .piece-header {
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .piece-header.degradation {
+            background: #fef2f2;
+        }
+
+        .piece-header h3 {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1a1a1a;
+        }
+
+        /* Summary boxes */
+        .summary-box {
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+        }
+
+        .summary-box.danger {
+            border-color: #fecaca;
+            background: #fef2f2;
+        }
+
+        .summary-box.success {
+            border-color: #bbf7d0;
+        }
+
+        .summary-box h3 {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .summary-box.danger h3 {
+            color: #dc2626;
+        }
+
+        .summary-box.success h3 {
+            color: #16a34a;
+        }
+
+        /* Warning */
+        .warning-box {
+            border: 1px solid #fecaca;
+            padding: 8px;
+            margin-top: 10px;
+        }
+
+        .warning-box p {
+            color: #dc2626;
+            font-size: 9px;
+        }
+
+        .legend {
+            font-size: 8px;
+            color: #dc2626;
+            margin-top: 8px;
+        }
+
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px 15mm;
+            font-size: 8px;
+            border-top: 1px solid #4f46e5;
+            background: #fff;
+        }
+
+        .footer-brand {
+            color: #4f46e5;
+            font-weight: bold;
+        }
+
+        .col-entree {
+            background: #f8fafc;
+        }
+
+        .col-sortie {
+            background: #fffbeb;
+        }
+    </style>
+</head>
+
+<body>
+    {# Footer fixe #}
+    <div class="footer">
+        <span class="footer-brand">EDLYA</span> — Document généré le {{ "now"|date('d/m/Y à H:i') }}
+    </div>
+
+    <div class="content-wrapper">
+        {# Header #}
+        <div class="header-top">
+            <div class="header-left">
+                <h1>Comparatif Entrée / Sortie</h1>
+                <p class="header-subtitle">{{ logement.adresse }}, {{ logement.codePostal }} {{ logement.ville }}</p>
+            </div>
+            <div class="header-right">
+                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICAgIDxwYXRoIGQ9Ik01MCAxMCBMODggNDIgTDg4IDg4IEwxMiA4OCBMMTIgNDIgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGY0NmU1IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTYgNDUgTDUwIDEwIEw5NCA0NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGY0NmU1IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogICAgPGVsbGlwc2UgY3g9IjUwIiBjeT0iNTgiIHJ4PSIyMCIgcnk9IjE0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0ZjQ2ZTUiIHN0cm9rZS13aWR0aD0iNCIvPgogICAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1OCIgcj0iNyIgZmlsbD0iIzRmNDZlNSIvPgo8L3N2Zz4=" alt="Edlya" style="width: 50px; height: 50px;">
+            </div>
+        </div>
+
+        {# Info boxes #}
+        <div class="info-grid">
+            <div class="info-box">
+                <h3>État des lieux d'entrée</h3>
+                {% if entree %}
+                    <p><strong>Date :</strong> {{ entree.dateRealisation|date('d/m/Y') }}</p>
+                    <p><strong>Locataire :</strong> {{ entree.locataireNom }}</p>
+                {% else %}
+                    <p><em>Non disponible</em></p>
+                {% endif %}
+            </div>
+            <div class="info-box">
+                <h3>État des lieux de sortie</h3>
+                {% if sortie %}
+                    <p><strong>Date :</strong> {{ sortie.dateRealisation|date('d/m/Y') }}</p>
+                    <p><strong>Locataire :</strong> {{ sortie.locataireNom }}</p>
+                {% else %}
+                    <p><em>Non disponible</em></p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Compteurs #}
+        {% if comparatif.compteurs|length > 0 %}
+            <div class="section">
+                <div class="section-title">Relevé des compteurs</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Type</th>
+                            <th style="width: 25%;">N° Compteur</th>
+                            <th class="text-center" style="width: 18%;">Index entrée</th>
+                            <th class="text-center" style="width: 18%;">Index sortie</th>
+                            <th class="text-center" style="width: 19%;">Consommation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for compteur in comparatif.compteurs %}
+                            <tr>
+                                <td class="font-bold">
+                                    {% if compteur.type == 'electricite' %}Électricité
+                                    {% elseif compteur.type == 'eau_froide' %}Eau froide
+                                    {% elseif compteur.type == 'eau_chaude' %}Eau chaude
+                                    {% elseif compteur.type == 'gaz' %}Gaz
+                                    {% else %}{{ compteur.type|replace({'_': ' '})|capitalize }}{% endif %}
+                                </td>
+                                <td style="font-size: 8px;">{{ compteur.sortie.numero ?? compteur.entree.numero ?? '-' }}</td>
+                                <td class="text-center col-entree font-bold">{{ compteur.entree.index ?? '-' }}</td>
+                                <td class="text-center col-sortie font-bold">{{ compteur.sortie.index ?? '-' }}</td>
+                                <td class="text-center font-bold">
+                                    {% if compteur.consommation is defined and compteur.consommation is not null %}
+                                        {{ compteur.consommation }}
+                                        {% if compteur.type == 'electricite' %} kWh
+                                        {% else %} m³{% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+
+        {# Clés #}
+        {% if comparatif.cles|length > 0 %}
+            <div class="section">
+                <div class="section-title">Restitution des clés</div>
+                {% set totalEntree = 0 %}
+                {% set totalSortie = 0 %}
+                {% set differenceTotal = 0 %}
+                {% for cle in comparatif.cles %}
+                    {% set totalEntree = totalEntree + cle.entree %}
+                    {% set totalSortie = totalSortie + cle.sortie %}
+                    {% set differenceTotal = differenceTotal + cle.difference %}
+                {% endfor %}
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Type de clé</th>
+                            <th class="text-center" style="width: 20%;">Entrée</th>
+                            <th class="text-center" style="width: 20%;">Sortie</th>
+                            <th class="text-center" style="width: 30%;">Différence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cle in comparatif.cles %}
+                            <tr class="{{ cle.difference < 0 ? 'degradation-row' : '' }}">
+                                <td>
+                                    {% if cle.type == 'porte_entree' %}Porte d'entrée
+                                    {% elseif cle.type == 'boite_lettres' %}Boîte aux lettres
+                                    {% elseif cle.type == 'local_velo' %}Local vélo
+                                    {% elseif cle.type == 'badge' %}Badge d'accès
+                                    {% elseif cle.type == 'telecommande' %}Télécommande
+                                    {% else %}{{ cle.type|replace({'_': ' '})|capitalize }}{% endif %}
+                                </td>
+                                <td class="text-center col-entree font-bold">{{ cle.entree > 0 ? cle.entree : '-' }}</td>
+                                <td class="text-center col-sortie font-bold">{{ cle.sortie > 0 ? cle.sortie : '-' }}</td>
+                                <td class="text-center font-bold {{ cle.difference < 0 ? 'text-red' : (cle.difference > 0 ? 'text-green' : '') }}">
+                                    {% if cle.difference < 0 %}
+                                        {{ cle.difference }} clé(s) manquante(s)
+                                    {% elseif cle.difference > 0 %}
+                                        +{{ cle.difference }}
+                                    {% else %}
+                                        OK
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f5f5f5;">
+                            <td class="font-bold">TOTAL</td>
+                            <td class="text-center font-bold col-entree">{{ totalEntree }}</td>
+                            <td class="text-center font-bold col-sortie">{{ totalSortie }}</td>
+                            <td class="text-center font-bold {{ differenceTotal < 0 ? 'text-red' : 'text-green' }}">
+                                {% if differenceTotal < 0 %}
+                                    {{ differenceTotal }} clé(s)
+                                {% elseif differenceTotal > 0 %}
+                                    +{{ differenceTotal }}
+                                {% else %}
+                                    Complet
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                {% if differenceTotal < 0 %}
+                    <div class="warning-box">
+                        <p><strong>Attention :</strong> {{ differenceTotal|abs }} clé(s) non restituée(s).</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {# Résumé dégradations #}
+        {% if comparatif.degradations|length > 0 %}
+            <div class="summary-box danger">
+                <h3>{{ comparatif.degradations|length }} dégradation(s) constatée(s)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Pièce</th>
+                            <th style="width: 20%;">Élément</th>
+                            <th class="text-center" style="width: 15%;">Entrée</th>
+                            <th class="text-center" style="width: 15%;">Sortie</th>
+                            <th style="width: 30%;">Observations</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for degradation in comparatif.degradations %}
+                            <tr>
+                                <td>{{ degradation.piece }}</td>
+                                <td class="font-bold">{{ degradation.element }}</td>
+                                <td class="text-center">
+                                    <span class="etat-badge etat-{{ degradation.etatEntree }}">
+                                        {{ degradation.etatEntree|replace({'_': ' '})|upper }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="etat-badge etat-{{ degradation.etatSortie }}">
+                                        {{ degradation.etatSortie|replace({'_': ' '})|upper }}
+                                    </span>
+                                </td>
+                                <td>{{ degradation.observations ?? '-' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="summary-box success">
+                <h3>Aucune dégradation constatée</h3>
+                <p style="font-size: 10px; color: #16a34a;">Le logement est rendu dans un état conforme à l'état des lieux d'entrée.</p>
+            </div>
+        {% endif %}
+
+        {# Détail par pièce #}
+        {% for pieceName, elements in comparatif.pieces %}
+            {% set hasDegradation = false %}
+            {% for element in elements %}
+                {% if element.evolution == 'degrade' %}
+                    {% set hasDegradation = true %}
+                {% endif %}
+            {% endfor %}
+
+            <div class="piece">
+                <div class="piece-header {{ hasDegradation ? 'degradation' : '' }}">
+                    <h3>{{ pieceName }} {% if hasDegradation %} — Dégradation(s) {% endif %}</h3>
+                </div>
+                <table style="margin: 0;">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Élément</th>
+                            <th style="width: 12%;">Type</th>
+                            <th class="text-center" style="width: 15%;">Entrée</th>
+                            <th class="text-center" style="width: 15%;">Sortie</th>
+                            <th class="text-center" style="width: 20%;">Évolution</th>
+                            <th style="width: 18%;">Observations</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for element in elements %}
+                            <tr class="{{ element.evolution == 'degrade' ? 'degradation-row' : '' }}">
+                                <td class="font-bold">{{ element.element }}</td>
+                                <td>{{ element.type|replace({'_': ' '})|capitalize }}</td>
+                                <td class="text-center">
+                                    {% if element.entree %}
+                                        <span class="etat-badge etat-{{ element.entree.etat }}">
+                                            {{ element.entree.etat|replace({'_': ' '})|upper }}
+                                        </span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if element.sortie %}
+                                        <span class="etat-badge etat-{{ element.sortie.etat }}">
+                                            {{ element.sortie.etat|replace({'_': ' '})|upper }}
+                                        </span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if element.evolution == 'degrade' %}
+                                        <span class="text-red font-bold">Dégradé</span>
+                                    {% elseif element.evolution == 'ameliore' %}
+                                        <span class="text-green font-bold">Amélioré</span>
+                                    {% elseif element.evolution == 'nouveau' %}
+                                        <span style="color: #666;">Nouveau</span>
+                                    {% elseif element.evolution == 'supprime' %}
+                                        <span style="color: #999;">Supprimé</span>
+                                    {% else %}
+                                        Identique
+                                    {% endif %}
+                                </td>
+                                <td>{{ element.sortie.observations ?? '-' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+
+    </div>
+</body>
+
+</html>

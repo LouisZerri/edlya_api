@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+# See also https://symfony.com/doc/current/service_container/import.html
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    photo_directory: '%kernel.project_dir%/public/uploads/photos'
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+
+    App\Doctrine\CurrentUserExtension:
+        tags:
+            - { name: api_platform.doctrine.orm.query_extension.collection }
+            - { name: api_platform.doctrine.orm.query_extension.item }
+
+    App\State\UserAssignProcessor:
+        decorates: api_platform.doctrine.orm.state.persist_processor
+        arguments:
+            $persistProcessor: '@.inner'
+
+    App\Controller\PhotoController:
+        arguments:
+            $photoDirectory: '%photo_directory%'
+
+    App\Service\PdfGenerator:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Service\EmailService:
+        arguments:
+            $fromEmail: '%env(MAILER_FROM_EMAIL)%'
+            $fromName: '%env(MAILER_FROM_NAME)%'
+
+    App\Command\TestEmailCommand:
+        arguments:
+            $fromEmail: '%env(MAILER_FROM_EMAIL)%'
+            $fromName: '%env(MAILER_FROM_NAME)%'
+
+    App\Controller\AuthController:
+        arguments:
+            $fromEmail: '%env(MAILER_FROM_EMAIL)%'
+
+    App\Controller\AIController:
+        arguments:
+            $photoDirectory: '%photo_directory%'
+
+    App\Service\AIService:
+        arguments:
+            $openaiApiKey: '%env(OPENAI_API_KEY)%'

@@ -1,0 +1,26 @@
+api_platform:
+    title: 'Edlya API'
+    version: '1.0.0'
+
+    graphql:
+        enabled: true
+        graphiql:
+            enabled: true
+        introspection:
+            enabled: true
+
+    defaults:
+        pagination_items_per_page: 20
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+
+when@prod:
+    api_platform:
+        enable_docs: false
+        enable_entrypoint: false
+        graphql:
+            graphiql:
+                enabled: false
+            introspection:
+                enabled: false

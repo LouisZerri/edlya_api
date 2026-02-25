@@ -1,0 +1,30 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Comparatif état des lieux{% endblock %}
+
+{% block content %}
+    <h1>Comparatif état des lieux</h1>
+
+    <p>
+        {{ bailleur.name }}{% if bailleur.entreprise %} ({{ bailleur.entreprise }}){% endif %}
+        vous envoie le comparatif de l'état des lieux.
+    </p>
+
+    <div class="info-box">
+        <strong>Logement :</strong> {{ logement.nom }}<br>
+        <strong>Adresse :</strong> {{ logement.adresse }}, {{ logement.codePostal }} {{ logement.ville }}<br>
+        <strong>Date :</strong> {{ edl.dateRealisation|date('d/m/Y') }}<br>
+        <strong>Locataire :</strong> {{ edl.locataireNom }}
+    </div>
+
+    {% if comparatif.statistiques.elementsDegrades > 0 %}
+    <div class="warning">
+        {{ comparatif.statistiques.elementsDegrades }} élément{{ comparatif.statistiques.elementsDegrades > 1 ? 's' : '' }}
+        dégradé{{ comparatif.statistiques.elementsDegrades > 1 ? 's' : '' }} constaté{{ comparatif.statistiques.elementsDegrades > 1 ? 's' : '' }}.
+    </div>
+    {% endif %}
+
+    <p>
+        Vous trouverez le comparatif complet en pièce jointe de cet email (format PDF).
+    </p>
+{% endblock %}
