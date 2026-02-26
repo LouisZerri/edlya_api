@@ -84,10 +84,6 @@ class Logement
     #[Groups(['logement:read', 'logement:write'])]
     private ?string $description = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['logement:read', 'logement:write'])]
-    private ?string $photoPrincipale = null;
-
     #[ORM\Column]
     #[Groups(['logement:read'])]
     private ?\DateTimeImmutable $createdAt = null;
@@ -217,18 +213,6 @@ class Logement
     public function setDescription(?string $description): static
     {
         $this->description = $description;
-
-        return $this;
-    }
-
-    public function getPhotoPrincipale(): ?string
-    {
-        return $this->photoPrincipale;
-    }
-
-    public function setPhotoPrincipale(?string $photoPrincipale): static
-    {
-        $this->photoPrincipale = $photoPrincipale;
 
         return $this;
     }

@@ -96,7 +96,7 @@ class PartageController extends AbstractController
         $partage->setEtatDesLieux($edl);
         $partage->setType($type);
         $partage->setEmail($email);
-        $partage->setExpireAt(new \DateTime("+{$expireDays} days"));
+        $partage->setExpireAt(new \DateTimeImmutable("+{$expireDays} days"));
 
         $em->persist($partage);
         $em->flush();
@@ -161,7 +161,7 @@ class PartageController extends AbstractController
 
         // Marquer comme consulté
         if ($partage->getConsulteAt() === null) {
-            $partage->setConsulteAt(new \DateTime());
+            $partage->setConsulteAt(new \DateTimeImmutable());
             $em->flush();
         }
 
@@ -270,7 +270,7 @@ class PartageController extends AbstractController
 
         // Marquer comme consulté
         if ($partage->getConsulteAt() === null) {
-            $partage->setConsulteAt(new \DateTime());
+            $partage->setConsulteAt(new \DateTimeImmutable());
             $em->flush();
         }
 

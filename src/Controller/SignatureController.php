@@ -84,7 +84,7 @@ class SignatureController extends AbstractController
 
         // La signature est un SVG encodé en base64
         $edl->setSignatureBailleur($signature);
-        $edl->setDateSignatureBailleur(new \DateTime());
+        $edl->setDateSignatureBailleur(new \DateTimeImmutable());
         $edl->setStatut('termine');
 
         $em->flush();
@@ -133,7 +133,7 @@ class SignatureController extends AbstractController
         }
 
         $edl->setSignatureLocataire($signature);
-        $edl->setDateSignatureLocataire(new \DateTime());
+        $edl->setDateSignatureLocataire(new \DateTimeImmutable());
         $edl->setSignatureIp($request->getClientIp());
         $edl->setSignatureUserAgent($request->headers->get('User-Agent'));
         $edl->setStatut('signe');

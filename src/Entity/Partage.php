@@ -53,11 +53,11 @@ class Partage
 
     #[ORM\Column]
     #[Groups(['partage:read', 'edl:read'])]
-    private ?\DateTime $expireAt = null;
+    private ?\DateTimeImmutable $expireAt = null;
 
     #[ORM\Column(nullable: true)]
     #[Groups(['partage:read'])]
-    private ?\DateTime $consulteAt = null;
+    private ?\DateTimeImmutable $consulteAt = null;
 
     #[ORM\Column]
     #[Groups(['partage:read'])]
@@ -120,24 +120,24 @@ class Partage
         return $this;
     }
 
-    public function getExpireAt(): ?\DateTime
+    public function getExpireAt(): ?\DateTimeImmutable
     {
         return $this->expireAt;
     }
 
-    public function setExpireAt(\DateTime $expireAt): static
+    public function setExpireAt(\DateTimeImmutable $expireAt): static
     {
         $this->expireAt = $expireAt;
 
         return $this;
     }
 
-    public function getConsulteAt(): ?\DateTime
+    public function getConsulteAt(): ?\DateTimeImmutable
     {
         return $this->consulteAt;
     }
 
-    public function setConsulteAt(?\DateTime $consulteAt): static
+    public function setConsulteAt(?\DateTimeImmutable $consulteAt): static
     {
         $this->consulteAt = $consulteAt;
 
@@ -170,7 +170,7 @@ class Partage
 
     public function isExpired(): bool
     {
-        return $this->expireAt < new \DateTime();
+        return $this->expireAt < new \DateTimeImmutable();
     }
 
     #[ORM\PrePersist]
@@ -186,7 +186,7 @@ class Partage
 
         // Expiration par défaut: 7 jours
         if ($this->expireAt === null) {
-            $this->expireAt = new \DateTime('+7 days');
+            $this->expireAt = new \DateTimeImmutable('+7 days');
         }
     }
 

@@ -105,11 +105,11 @@ class EtatDesLieux
 
     #[ORM\Column(nullable: true)]
     #[Groups(['edl:read'])]
-    private ?\DateTime $dateSignatureBailleur = null;
+    private ?\DateTimeImmutable $dateSignatureBailleur = null;
 
     #[ORM\Column(nullable: true)]
     #[Groups(['edl:read'])]
-    private ?\DateTime $dateSignatureLocataire = null;
+    private ?\DateTimeImmutable $dateSignatureLocataire = null;
 
     #[ORM\Column(length: 45, nullable: true)]
     private ?string $signatureIp = null;
@@ -335,24 +335,24 @@ class EtatDesLieux
         return $this;
     }
 
-    public function getDateSignatureBailleur(): ?\DateTime
+    public function getDateSignatureBailleur(): ?\DateTimeImmutable
     {
         return $this->dateSignatureBailleur;
     }
 
-    public function setDateSignatureBailleur(?\DateTime $dateSignatureBailleur): static
+    public function setDateSignatureBailleur(?\DateTimeImmutable $dateSignatureBailleur): static
     {
         $this->dateSignatureBailleur = $dateSignatureBailleur;
 
         return $this;
     }
 
-    public function getDateSignatureLocataire(): ?\DateTime
+    public function getDateSignatureLocataire(): ?\DateTimeImmutable
     {
         return $this->dateSignatureLocataire;
     }
 
-    public function setDateSignatureLocataire(?\DateTime $dateSignatureLocataire): static
+    public function setDateSignatureLocataire(?\DateTimeImmutable $dateSignatureLocataire): static
     {
         $this->dateSignatureLocataire = $dateSignatureLocataire;
 
