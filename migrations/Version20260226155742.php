@@ -7,11 +7,11 @@ namespace DoctrineMigrations;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
-final class Version20260226120000 extends AbstractMigration
+final class Version20260226155742 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Suppression des colonnes role et entreprise de la table user';
+        return 'Suppression des colonnes role et entreprise de user';
     }
 
     public function up(Schema $schema): void
