@@ -64,16 +64,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\Length(max: 20, maxMessage: 'Le téléphone ne peut pas dépasser {{ limit }} caractères')]
     private ?string $telephone = null;
 
-    #[ORM\Column(length: 20)]
-    #[Groups(['user:read', 'user:write'])]
-    #[Assert\Choice(choices: ['admin', 'agent', 'bailleur'], message: 'Le rôle doit être "admin", "agent" ou "bailleur"')]
-    private ?string $role = 'bailleur';
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:read', 'user:write'])]
-    #[Assert\Length(max: 255, maxMessage: 'L\'entreprise ne peut pas dépasser {{ limit }} caractères')]
-    private ?string $entreprise = null;
-
     #[ORM\Column]
     #[Groups(['user:read'])]
     private ?\DateTimeImmutable $createdAt = null;
@@ -201,30 +191,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setTelephone(?string $telephone): static
     {
         $this->telephone = $telephone;
-
-        return $this;
-    }
-
-    public function getRole(): ?string
-    {
-        return $this->role;
-    }
-
-    public function setRole(string $role): static
-    {
-        $this->role = $role;
-
-        return $this;
-    }
-
-    public function getEntreprise(): ?string
-    {
-        return $this->entreprise;
-    }
-
-    public function setEntreprise(?string $entreprise): static
-    {
-        $this->entreprise = $entreprise;
 
         return $this;
     }

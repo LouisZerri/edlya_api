@@ -246,7 +246,6 @@ class PartageController extends AbstractController
             ],
             'bailleur' => [
                 'nom' => $edl->getUser()->getName(),
-                'entreprise' => $edl->getUser()->getEntreprise(),
             ],
             'pieces' => $pieces,
             'compteurs' => $compteurs,
