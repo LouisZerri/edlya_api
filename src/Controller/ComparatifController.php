@@ -94,15 +94,33 @@ class ComparatifController extends AbstractController
         }
 
         // Récupérer le dernier EDL d'entrée et de sortie signés ou terminés
-        $edlEntree = $em->getRepository(EtatDesLieux::class)->findOneBy(
-            ['logement' => $logement, 'type' => 'entree', 'statut' => ['termine', 'signe']],
-            ['dateRealisation' => 'DESC']
-        );
+        $edlEntree = $em->createQueryBuilder()
+            ->select('e')
+            ->from(EtatDesLieux::class, 'e')
+            ->where('e.logement = :logement')
+            ->andWhere('e.type = :type')
+            ->andWhere('e.statut IN (:statuts)')
+            ->setParameter('logement', $logement)
+            ->setParameter('type', 'entree')
+            ->setParameter('statuts', ['termine', 'signe'])
+            ->orderBy('e.dateRealisation', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
 
-        $edlSortie = $em->getRepository(EtatDesLieux::class)->findOneBy(
-            ['logement' => $logement, 'type' => 'sortie', 'statut' => ['termine', 'signe']],
-            ['dateRealisation' => 'DESC']
-        );
+        $edlSortie = $em->createQueryBuilder()
+            ->select('e')
+            ->from(EtatDesLieux::class, 'e')
+            ->where('e.logement = :logement')
+            ->andWhere('e.type = :type')
+            ->andWhere('e.statut IN (:statuts)')
+            ->setParameter('logement', $logement)
+            ->setParameter('type', 'sortie')
+            ->setParameter('statuts', ['termine', 'signe'])
+            ->orderBy('e.dateRealisation', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
 
         if (!$edlEntree && !$edlSortie) {
             return new JsonResponse([

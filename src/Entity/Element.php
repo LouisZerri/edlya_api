@@ -73,9 +73,9 @@ class Element
     #[Groups(['element:read', 'element:write', 'piece:read', 'edl:read'])]
     private ?array $degradations = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(options: ['default' => 0])]
     #[Groups(['element:read', 'element:write', 'piece:read', 'edl:read'])]
-    private ?int $ordre = null;
+    private int $ordre = 0;
 
     #[ORM\Column]
     #[Groups(['element:read'])]
@@ -174,12 +174,12 @@ class Element
         return $this;
     }
 
-    public function getOrdre(): ?int
+    public function getOrdre(): int
     {
         return $this->ordre;
     }
 
-    public function setOrdre(?int $ordre): static
+    public function setOrdre(int $ordre): static
     {
         $this->ordre = $ordre;
 
