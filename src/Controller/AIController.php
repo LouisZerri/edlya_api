@@ -374,7 +374,9 @@ class AIController extends AbstractController
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
-                'error' => 'Erreur lors de l\'analyse du PDF. Veuillez réessayer.'
+                'error' => 'Erreur lors de l\'analyse du PDF. Veuillez réessayer.',
+                'debug' => $e->getMessage(),
+                'trace' => $e->getFile() . ':' . $e->getLine(),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -667,7 +669,9 @@ class AIController extends AbstractController
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
-                'error' => 'Erreur lors de l\'import. Veuillez réessayer.'
+                'error' => 'Erreur lors de l\'import. Veuillez réessayer.',
+                'debug' => $e->getMessage(),
+                'trace' => $e->getFile() . ':' . $e->getLine(),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
