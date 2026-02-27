@@ -7,6 +7,7 @@ use App\Entity\EtatDesLieux;
 use App\Entity\User;
 use App\Service\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,7 +18,8 @@ class SignatureController extends AbstractController
 {
     use AuthorizationTrait;
     public function __construct(
-        private EmailService $emailService
+        private EmailService $emailService,
+        private LoggerInterface $logger
     ) {
     }
     // ==========================================
@@ -141,7 +143,9 @@ class SignatureController extends AbstractController
             $this->emailService->sendSignatureConfirmation($edl);
             $emailSent = true;
         } catch (\Throwable $e) {
-            // Log l'erreur mais ne bloque pas la signature
+            $this->logger->error('Erreur envoi email signature EDL #' . $edl->getId() . ': ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
         }
 
         $response = [
