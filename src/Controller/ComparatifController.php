@@ -2,9 +2,11 @@
 
 namespace App\Controller;
 
+use App\Controller\Trait\AuthorizationTrait;
 use App\Entity\EtatDesLieux;
 use App\Entity\Logement;
-use App\Entity\User;
+use App\Repository\EtatDesLieuxRepository;
+use App\Service\ComparatifService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -13,6 +15,11 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class ComparatifController extends AbstractController
 {
+    use AuthorizationTrait;
+    public function __construct(
+        private ComparatifService $comparatifService,
+    ) {
+    }
     /**
      * Comparatif à partir d'un EDL (entrée ou sortie)
      * Trouve automatiquement l'EDL correspondant du même logement
@@ -20,44 +27,31 @@ class ComparatifController extends AbstractController
     #[Route('/api/edl/{id}/comparatif', name: 'api_edl_comparatif', methods: ['GET'])]
     public function comparatifEdl(
         int $id,
-        EntityManagerInterface $em
+        EtatDesLieuxRepository $edlRepo
     ): JsonResponse {
-        $user = $this->getUser();
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
-
-        $edl = $em->getRepository(EtatDesLieux::class)->find($id);
+        $edl = $edlRepo->findWithFullRelations($id);
 
         if (!$edl) {
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($edl->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edl, $user)) return $denied;
 
         $logement = $edl->getLogement();
 
         // Déterminer si c'est un EDL d'entrée ou de sortie et trouver l'autre
         if ($edl->getType() === 'sortie') {
             $edlSortie = $edl;
-            // Chercher le dernier EDL d'entrée pour ce logement
-            $edlEntree = $em->getRepository(EtatDesLieux::class)->findOneBy(
-                ['logement' => $logement, 'type' => 'entree'],
-                ['dateRealisation' => 'DESC']
-            );
+            $edlEntree = $edlRepo->findLastByLogementAndType($logement, 'entree');
         } else {
             $edlEntree = $edl;
-            // Chercher le dernier EDL de sortie pour ce logement
-            $edlSortie = $em->getRepository(EtatDesLieux::class)->findOneBy(
-                ['logement' => $logement, 'type' => 'sortie'],
-                ['dateRealisation' => 'DESC']
-            );
+            $edlSortie = $edlRepo->findLastByLogementAndType($logement, 'sortie');
         }
 
-        $comparatif = $this->buildComparatif($edlEntree, $edlSortie);
+        $comparatif = $this->comparatifService->buildComparatif($edlEntree, $edlSortie);
 
         return new JsonResponse([
             'logement' => [
@@ -75,13 +69,11 @@ class ComparatifController extends AbstractController
     #[Route('/api/logements/{id}/comparatif', name: 'api_logement_comparatif', methods: ['GET'])]
     public function comparatif(
         int $id,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        EtatDesLieuxRepository $edlRepo
     ): JsonResponse {
-        $user = $this->getUser();
-
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
         $logement = $em->getRepository(Logement::class)->find($id);
 
@@ -89,38 +81,11 @@ class ComparatifController extends AbstractController
             return new JsonResponse(['error' => 'Logement non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($logement->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($logement, $user)) return $denied;
 
         // Récupérer le dernier EDL d'entrée et de sortie signés ou terminés
-        $edlEntree = $em->createQueryBuilder()
-            ->select('e')
-            ->from(EtatDesLieux::class, 'e')
-            ->where('e.logement = :logement')
-            ->andWhere('e.type = :type')
-            ->andWhere('e.statut IN (:statuts)')
-            ->setParameter('logement', $logement)
-            ->setParameter('type', 'entree')
-            ->setParameter('statuts', ['termine', 'signe'])
-            ->orderBy('e.dateRealisation', 'DESC')
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
-
-        $edlSortie = $em->createQueryBuilder()
-            ->select('e')
-            ->from(EtatDesLieux::class, 'e')
-            ->where('e.logement = :logement')
-            ->andWhere('e.type = :type')
-            ->andWhere('e.statut IN (:statuts)')
-            ->setParameter('logement', $logement)
-            ->setParameter('type', 'sortie')
-            ->setParameter('statuts', ['termine', 'signe'])
-            ->orderBy('e.dateRealisation', 'DESC')
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+        $edlEntree = $edlRepo->findLastByLogementTypeAndStatuts($logement, 'entree', ['termine', 'signe']);
+        $edlSortie = $edlRepo->findLastByLogementTypeAndStatuts($logement, 'sortie', ['termine', 'signe']);
 
         if (!$edlEntree && !$edlSortie) {
             return new JsonResponse([
@@ -128,7 +93,7 @@ class ComparatifController extends AbstractController
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $comparatif = $this->buildComparatif($edlEntree, $edlSortie);
+        $comparatif = $this->comparatifService->buildComparatif($edlEntree, $edlSortie);
 
         return new JsonResponse([
             'logement' => [
@@ -154,190 +119,4 @@ class ComparatifController extends AbstractController
         ];
     }
 
-    private function buildComparatif(?EtatDesLieux $entree, ?EtatDesLieux $sortie): array
-    {
-        $comparatif = [
-            'pieces' => [],
-            'compteurs' => [],
-            'cles' => [],
-            'degradations' => [],
-            'statistiques' => [
-                'totalElements' => 0,
-                'elementsAmeliores' => 0,
-                'elementsDegrades' => 0,
-                'elementsIdentiques' => 0,
-            ],
-        ];
-
-        // Mapping des états vers un score (plus c'est haut, meilleur c'est)
-        $etatScore = [
-            'neuf' => 6,
-            'tres_bon' => 5,
-            'bon' => 4,
-            'usage' => 3,
-            'mauvais' => 2,
-            'hors_service' => 1,
-        ];
-
-        // Indexer les éléments par pièce et nom pour l'entrée
-        $elementsEntree = [];
-        if ($entree) {
-            foreach ($entree->getPieces() as $piece) {
-                foreach ($piece->getElements() as $element) {
-                    $key = $piece->getNom() . '|' . $element->getNom() . '|' . $element->getType();
-                    $elementsEntree[$key] = [
-                        'piece' => $piece->getNom(),
-                        'nom' => $element->getNom(),
-                        'type' => $element->getType(),
-                        'etat' => $element->getEtat(),
-                        'observations' => $element->getObservations(),
-                        'degradations' => $element->getDegradations(),
-                    ];
-                }
-            }
-        }
-
-        // Comparer avec les éléments de sortie
-        $processedKeys = [];
-        if ($sortie) {
-            foreach ($sortie->getPieces() as $piece) {
-                $pieceName = $piece->getNom();
-
-                if (!isset($comparatif['pieces'][$pieceName])) {
-                    $comparatif['pieces'][$pieceName] = [];
-                }
-
-                foreach ($piece->getElements() as $element) {
-                    $key = $pieceName . '|' . $element->getNom() . '|' . $element->getType();
-                    $processedKeys[] = $key;
-
-                    $entreeData = $elementsEntree[$key] ?? null;
-                    $sortieData = [
-                        'nom' => $element->getNom(),
-                        'type' => $element->getType(),
-                        'etat' => $element->getEtat(),
-                        'observations' => $element->getObservations(),
-                        'degradations' => $element->getDegradations(),
-                    ];
-
-                    $evolution = 'nouveau';
-                    if ($entreeData) {
-                        $scoreEntree = $etatScore[$entreeData['etat']] ?? 0;
-                        $scoreSortie = $etatScore[$sortieData['etat']] ?? 0;
-
-                        if ($scoreSortie > $scoreEntree) {
-                            $evolution = 'ameliore';
-                            $comparatif['statistiques']['elementsAmeliores']++;
-                        } elseif ($scoreSortie < $scoreEntree) {
-                            $evolution = 'degrade';
-                            $comparatif['statistiques']['elementsDegrades']++;
-
-                            // Ajouter aux dégradations
-                            $comparatif['degradations'][] = [
-                                'piece' => $pieceName,
-                                'element' => $element->getNom(),
-                                'type' => $element->getType(),
-                                'etatEntree' => $entreeData['etat'],
-                                'etatSortie' => $sortieData['etat'],
-                                'observations' => $sortieData['observations'],
-                                'degradationsDetail' => $sortieData['degradations'],
-                            ];
-                        } else {
-                            $evolution = 'identique';
-                            $comparatif['statistiques']['elementsIdentiques']++;
-                        }
-                    }
-
-                    $comparatif['statistiques']['totalElements']++;
-
-                    $comparatif['pieces'][$pieceName][] = [
-                        'element' => $element->getNom(),
-                        'type' => $element->getType(),
-                        'entree' => $entreeData ? [
-                            'etat' => $entreeData['etat'],
-                            'observations' => $entreeData['observations'],
-                        ] : null,
-                        'sortie' => [
-                            'etat' => $sortieData['etat'],
-                            'observations' => $sortieData['observations'],
-                        ],
-                        'evolution' => $evolution,
-                    ];
-                }
-            }
-        }
-
-        // Ajouter les éléments d'entrée qui n'existent plus en sortie
-        if ($entree && $sortie) {
-            foreach ($elementsEntree as $key => $data) {
-                if (!in_array($key, $processedKeys)) {
-                    $pieceName = $data['piece'];
-                    if (!isset($comparatif['pieces'][$pieceName])) {
-                        $comparatif['pieces'][$pieceName] = [];
-                    }
-
-                    $comparatif['pieces'][$pieceName][] = [
-                        'element' => $data['nom'],
-                        'type' => $data['type'],
-                        'entree' => [
-                            'etat' => $data['etat'],
-                            'observations' => $data['observations'],
-                        ],
-                        'sortie' => null,
-                        'evolution' => 'supprime',
-                    ];
-                }
-            }
-        }
-
-        // Comparer les compteurs
-        $compteursEntree = [];
-        if ($entree) {
-            foreach ($entree->getCompteurs() as $c) {
-                $compteursEntree[$c->getType()] = [
-                    'numero' => $c->getNumero(),
-                    'index' => $c->getIndexValue(),
-                ];
-            }
-        }
-
-        if ($sortie) {
-            foreach ($sortie->getCompteurs() as $c) {
-                $entreeC = $compteursEntree[$c->getType()] ?? null;
-                $comparatif['compteurs'][] = [
-                    'type' => $c->getType(),
-                    'entree' => $entreeC,
-                    'sortie' => [
-                        'numero' => $c->getNumero(),
-                        'index' => $c->getIndexValue(),
-                    ],
-                    'consommation' => ($entreeC && $c->getIndexValue() && $entreeC['index'])
-                        ? (int)$c->getIndexValue() - (int)$entreeC['index']
-                        : null,
-                ];
-            }
-        }
-
-        // Comparer les clés
-        $clesEntree = [];
-        if ($entree) {
-            foreach ($entree->getCles() as $c) {
-                $clesEntree[$c->getType()] = $c->getNombre();
-            }
-        }
-
-        if ($sortie) {
-            foreach ($sortie->getCles() as $c) {
-                $nbEntree = $clesEntree[$c->getType()] ?? 0;
-                $comparatif['cles'][] = [
-                    'type' => $c->getType(),
-                    'entree' => $nbEntree,
-                    'sortie' => $c->getNombre(),
-                    'difference' => $c->getNombre() - $nbEntree,
-                ];
-            }
-        }
-
-        return $comparatif;
-    }
 }

@@ -98,6 +98,15 @@ class PhotoController extends AbstractController
             );
         }
 
+        // Vérifier le contenu réel du fichier (protection contre le MIME spoofing)
+        $imageInfo = @getimagesize($file->getPathname());
+        if ($imageInfo === false && !in_array($file->getMimeType(), ['image/heic', 'image/heif'])) {
+            return new JsonResponse(
+                ['error' => 'Le fichier ne semble pas être une image valide'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
         // Valider la taille (max 10 Mo)
         if ($file->getSize() > 10 * 1024 * 1024) {
             return new JsonResponse(
@@ -247,6 +256,15 @@ class PhotoController extends AbstractController
         if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
             return new JsonResponse(
                 ['error' => 'Type de fichier non autorisé. Formats acceptés: JPEG, PNG, WebP, HEIC'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        // Vérifier le contenu réel du fichier (protection contre le MIME spoofing)
+        $imageInfo = @getimagesize($file->getPathname());
+        if ($imageInfo === false && !in_array($file->getMimeType(), ['image/heic', 'image/heif'])) {
+            return new JsonResponse(
+                ['error' => 'Le fichier ne semble pas être une image valide'],
                 Response::HTTP_BAD_REQUEST
             );
         }
@@ -402,6 +420,15 @@ class PhotoController extends AbstractController
         if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
             return new JsonResponse(
                 ['error' => 'Type de fichier non autorisé. Formats acceptés: JPEG, PNG, WebP, HEIC'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        // Vérifier le contenu réel du fichier (protection contre le MIME spoofing)
+        $imageInfo = @getimagesize($file->getPathname());
+        if ($imageInfo === false && !in_array($file->getMimeType(), ['image/heic', 'image/heif'])) {
+            return new JsonResponse(
+                ['error' => 'Le fichier ne semble pas être une image valide'],
                 Response::HTTP_BAD_REQUEST
             );
         }

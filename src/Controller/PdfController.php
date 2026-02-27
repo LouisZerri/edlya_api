@@ -2,10 +2,11 @@
 
 namespace App\Controller;
 
-use App\Entity\EtatDesLieux;
+use App\Controller\Trait\AuthorizationTrait;
 use App\Entity\User;
+use App\Repository\EtatDesLieuxRepository;
+use App\Service\ComparatifService;
 use App\Service\PdfGenerator;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,34 +15,28 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class PdfController extends AbstractController
 {
-    private EntityManagerInterface $em;
-
-    public function __construct(EntityManagerInterface $em)
-    {
-        $this->em = $em;
+    use AuthorizationTrait;
+    public function __construct(
+        private EtatDesLieuxRepository $edlRepo,
+        private ComparatifService $comparatifService,
+    ) {
     }
     #[Route('/api/edl/{id}/pdf', name: 'api_edl_pdf', methods: ['GET'])]
     public function generatePdf(
         int $id,
-        EntityManagerInterface $em,
+        EtatDesLieuxRepository $edlRepo,
         PdfGenerator $pdfGenerator
     ): Response {
-        $user = $this->getUser();
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
-
-        $edl = $em->getRepository(EtatDesLieux::class)->find($id);
+        $edl = $edlRepo->findWithFullRelations($id);
 
         if (!$edl) {
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        // Vérifier l'accès
-        if ($edl->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edl, $user)) return $denied;
 
         $pdfContent = $pdfGenerator->generateEtatDesLieux($edl);
 
@@ -61,25 +56,19 @@ class PdfController extends AbstractController
     #[Route('/api/edl/{id}/pdf/preview', name: 'api_edl_pdf_preview', methods: ['GET'])]
     public function previewPdf(
         int $id,
-        EntityManagerInterface $em,
+        EtatDesLieuxRepository $edlRepo,
         PdfGenerator $pdfGenerator
     ): Response {
-        $user = $this->getUser();
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
-
-        $edl = $em->getRepository(EtatDesLieux::class)->find($id);
+        $edl = $edlRepo->findWithFullRelations($id);
 
         if (!$edl) {
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        // Vérifier l'accès
-        if ($edl->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edl, $user)) return $denied;
 
         $pdfContent = $pdfGenerator->generateEtatDesLieux($edl);
 
@@ -94,40 +83,29 @@ class PdfController extends AbstractController
         int $id,
         PdfGenerator $pdfGenerator
     ): Response {
-        $user = $this->getUser();
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
-
-        $edl = $this->em->getRepository(EtatDesLieux::class)->find($id);
+        $edl = $this->edlRepo->findWithFullRelations($id);
 
         if (!$edl) {
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($edl->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edl, $user)) return $denied;
 
         $logement = $edl->getLogement();
 
         // Déterminer si c'est un EDL d'entrée ou de sortie et trouver l'autre
         if ($edl->getType() === 'sortie') {
             $edlSortie = $edl;
-            $edlEntree = $this->em->getRepository(EtatDesLieux::class)->findOneBy(
-                ['logement' => $logement, 'type' => 'entree'],
-                ['dateRealisation' => 'DESC']
-            );
+            $edlEntree = $this->edlRepo->findLastByLogementAndType($logement, 'entree');
         } else {
             $edlEntree = $edl;
-            $edlSortie = $this->em->getRepository(EtatDesLieux::class)->findOneBy(
-                ['logement' => $logement, 'type' => 'sortie'],
-                ['dateRealisation' => 'DESC']
-            );
+            $edlSortie = $this->edlRepo->findLastByLogementAndType($logement, 'sortie');
         }
 
-        $comparatif = $this->buildComparatif($edlEntree, $edlSortie);
+        $comparatif = $this->comparatifService->buildComparatif($edlEntree, $edlSortie);
 
         // Calculate duration in months if both EDLs exist
         $dureeMois = null;
@@ -172,21 +150,16 @@ class PdfController extends AbstractController
         Request $request,
         PdfGenerator $pdfGenerator
     ): Response {
-        $user = $this->getUser();
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
-
-        $edlSortie = $this->em->getRepository(EtatDesLieux::class)->find($id);
+        $edlSortie = $this->edlRepo->findWithFullRelations($id);
 
         if (!$edlSortie) {
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($edlSortie->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edlSortie, $user)) return $denied;
 
         if ($edlSortie->getType() !== 'sortie') {
             return new JsonResponse([
@@ -252,163 +225,6 @@ class PdfController extends AbstractController
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
-    }
-
-    private function buildComparatif(?EtatDesLieux $entree, ?EtatDesLieux $sortie): array
-    {
-        $comparatif = [
-            'pieces' => [],
-            'compteurs' => [],
-            'cles' => [],
-            'degradations' => [],
-            'statistiques' => [
-                'totalElements' => 0,
-                'elementsAmeliores' => 0,
-                'elementsDegrades' => 0,
-                'elementsIdentiques' => 0,
-            ],
-        ];
-
-        $etatScore = [
-            'neuf' => 6,
-            'tres_bon' => 5,
-            'bon' => 4,
-            'usage' => 3,
-            'mauvais' => 2,
-            'hors_service' => 1,
-        ];
-
-        $elementsEntree = [];
-        if ($entree) {
-            foreach ($entree->getPieces() as $piece) {
-                foreach ($piece->getElements() as $element) {
-                    $key = $piece->getNom() . '|' . $element->getNom() . '|' . $element->getType();
-                    $elementsEntree[$key] = [
-                        'piece' => $piece->getNom(),
-                        'nom' => $element->getNom(),
-                        'type' => $element->getType(),
-                        'etat' => $element->getEtat(),
-                        'observations' => $element->getObservations(),
-                    ];
-                }
-            }
-        }
-
-        $processedKeys = [];
-        if ($sortie) {
-            foreach ($sortie->getPieces() as $piece) {
-                $pieceName = $piece->getNom();
-
-                if (!isset($comparatif['pieces'][$pieceName])) {
-                    $comparatif['pieces'][$pieceName] = [];
-                }
-
-                foreach ($piece->getElements() as $element) {
-                    $key = $pieceName . '|' . $element->getNom() . '|' . $element->getType();
-                    $processedKeys[] = $key;
-
-                    $entreeData = $elementsEntree[$key] ?? null;
-                    $sortieData = [
-                        'nom' => $element->getNom(),
-                        'type' => $element->getType(),
-                        'etat' => $element->getEtat(),
-                        'observations' => $element->getObservations(),
-                    ];
-
-                    $evolution = 'nouveau';
-                    if ($entreeData) {
-                        $scoreEntree = $etatScore[$entreeData['etat']] ?? 0;
-                        $scoreSortie = $etatScore[$sortieData['etat']] ?? 0;
-
-                        if ($scoreSortie > $scoreEntree) {
-                            $evolution = 'ameliore';
-                            $comparatif['statistiques']['elementsAmeliores']++;
-                        } elseif ($scoreSortie < $scoreEntree) {
-                            $evolution = 'degrade';
-                            $comparatif['statistiques']['elementsDegrades']++;
-
-                            $comparatif['degradations'][] = [
-                                'piece' => $pieceName,
-                                'element' => $element->getNom(),
-                                'type' => $element->getType(),
-                                'etatEntree' => $entreeData['etat'],
-                                'etatSortie' => $sortieData['etat'],
-                                'observations' => $sortieData['observations'],
-                            ];
-                        } else {
-                            $evolution = 'identique';
-                            $comparatif['statistiques']['elementsIdentiques']++;
-                        }
-                    }
-
-                    $comparatif['statistiques']['totalElements']++;
-
-                    $comparatif['pieces'][$pieceName][] = [
-                        'element' => $element->getNom(),
-                        'type' => $element->getType(),
-                        'entree' => $entreeData ? [
-                            'etat' => $entreeData['etat'],
-                            'observations' => $entreeData['observations'],
-                        ] : null,
-                        'sortie' => [
-                            'etat' => $sortieData['etat'],
-                            'observations' => $sortieData['observations'],
-                        ],
-                        'evolution' => $evolution,
-                    ];
-                }
-            }
-        }
-
-        // Compteurs
-        $compteursEntree = [];
-        if ($entree) {
-            foreach ($entree->getCompteurs() as $c) {
-                $compteursEntree[$c->getType()] = [
-                    'numero' => $c->getNumero(),
-                    'index' => $c->getIndexValue(),
-                ];
-            }
-        }
-
-        if ($sortie) {
-            foreach ($sortie->getCompteurs() as $c) {
-                $entreeC = $compteursEntree[$c->getType()] ?? null;
-                $comparatif['compteurs'][] = [
-                    'type' => $c->getType(),
-                    'entree' => $entreeC,
-                    'sortie' => [
-                        'numero' => $c->getNumero(),
-                        'index' => $c->getIndexValue(),
-                    ],
-                    'consommation' => ($entreeC && $c->getIndexValue() && $entreeC['index'])
-                        ? (int)$c->getIndexValue() - (int)$entreeC['index']
-                        : null,
-                ];
-            }
-        }
-
-        // Clés
-        $clesEntree = [];
-        if ($entree) {
-            foreach ($entree->getCles() as $c) {
-                $clesEntree[$c->getType()] = $c->getNombre();
-            }
-        }
-
-        if ($sortie) {
-            foreach ($sortie->getCles() as $c) {
-                $nbEntree = $clesEntree[$c->getType()] ?? 0;
-                $comparatif['cles'][] = [
-                    'type' => $c->getType(),
-                    'entree' => $nbEntree,
-                    'sortie' => $c->getNombre(),
-                    'difference' => $c->getNombre() - $nbEntree,
-                ];
-            }
-        }
-
-        return $comparatif;
     }
 
 }

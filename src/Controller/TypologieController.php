@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Controller\Trait\AuthorizationTrait;
 use App\Entity\EtatDesLieux;
 use App\Entity\User;
 use App\Service\TypologieService;
@@ -14,6 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class TypologieController extends AbstractController
 {
+    use AuthorizationTrait;
     public function __construct(
         private TypologieService $typologieService
     ) {
@@ -37,11 +39,8 @@ class TypologieController extends AbstractController
         Request $request,
         EntityManagerInterface $em
     ): JsonResponse {
-        $user = $this->getUser();
-
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
         $edl = $em->getRepository(EtatDesLieux::class)->find($id);
 
@@ -49,9 +48,7 @@ class TypologieController extends AbstractController
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($edl->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edl, $user)) return $denied;
 
         // Vérifier qu'il n'y a pas déjà des pièces
         if ($edl->getPieces()->count() > 0) {

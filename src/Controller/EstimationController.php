@@ -2,10 +2,12 @@
 
 namespace App\Controller;
 
+use App\Controller\Trait\AuthorizationTrait;
 use App\Entity\CoutReparation;
 use App\Entity\EtatDesLieux;
 use App\Entity\Logement;
 use App\Entity\User;
+use App\Repository\EtatDesLieuxRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -15,6 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class EstimationController extends AbstractController
 {
+    use AuthorizationTrait;
     // Grille tarifaire indicative par type d'élément et niveau de dégradation
     private const GRILLE_TARIFS = [
         'sol' => [
@@ -80,13 +83,11 @@ class EstimationController extends AbstractController
     #[Route('/api/logements/{id}/estimations', name: 'api_logement_estimations', methods: ['GET'])]
     public function estimations(
         int $id,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        EtatDesLieuxRepository $edlRepo
     ): JsonResponse {
-        $user = $this->getUser();
-
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
         $logement = $em->getRepository(Logement::class)->find($id);
 
@@ -94,20 +95,11 @@ class EstimationController extends AbstractController
             return new JsonResponse(['error' => 'Logement non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($logement->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($logement, $user)) return $denied;
 
-        // Récupérer le dernier EDL d'entrée et de sortie
-        $edlEntree = $em->getRepository(EtatDesLieux::class)->findOneBy(
-            ['logement' => $logement, 'type' => 'entree', 'statut' => ['termine', 'signe']],
-            ['dateRealisation' => 'DESC']
-        );
-
-        $edlSortie = $em->getRepository(EtatDesLieux::class)->findOneBy(
-            ['logement' => $logement, 'type' => 'sortie', 'statut' => ['termine', 'signe']],
-            ['dateRealisation' => 'DESC']
-        );
+        // Récupérer le dernier EDL d'entrée et de sortie (avec eager loading)
+        $edlEntree = $edlRepo->findLastByLogementTypeAndStatuts($logement, 'entree', ['termine', 'signe']);
+        $edlSortie = $edlRepo->findLastByLogementTypeAndStatuts($logement, 'sortie', ['termine', 'signe']);
 
         if (!$edlEntree || !$edlSortie) {
             return new JsonResponse([
@@ -253,10 +245,8 @@ class EstimationController extends AbstractController
     #[Route('/api/couts-reparation', name: 'api_couts_reparation', methods: ['GET'])]
     public function coutsReparation(EntityManagerInterface $em): JsonResponse
     {
-        $user = $this->getUser();
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
         $couts = $em->getRepository(CoutReparation::class)->findBy(['actif' => true], ['typeElement' => 'ASC', 'nom' => 'ASC']);
 

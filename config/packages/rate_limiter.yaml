@@ -1,0 +1,25 @@
+framework:
+    rate_limiter:
+        # Login : 5 tentatives par minute par IP
+        auth_login:
+            policy: sliding_window
+            limit: 5
+            interval: '1 minute'
+
+        # Register : 3 créations de compte par heure par IP
+        auth_register:
+            policy: sliding_window
+            limit: 3
+            interval: '1 hour'
+
+        # Forgot password : 3 demandes par heure par IP
+        auth_forgot_password:
+            policy: sliding_window
+            limit: 3
+            interval: '1 hour'
+
+        # Reset password : 5 tentatives par heure par IP
+        auth_reset_password:
+            policy: sliding_window
+            limit: 5
+            interval: '1 hour'

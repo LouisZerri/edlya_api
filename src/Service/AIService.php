@@ -167,7 +167,24 @@ class AIService
 
         $t3 = microtime(true);
         $this->logger->info('Import PDF - Appel API', ['model' => $model]);
-        $data = $this->callApiWithRetry($systemMessage, $userContent, $model);
+
+        try {
+            $data = $this->callApiWithRetry($systemMessage, $userContent, $model);
+        } catch (\Throwable $e) {
+            // Nettoyer les ressources temporaires en cas d'erreur
+            if ($photoProcess !== null) {
+                proc_close($photoProcess);
+            }
+            if ($photoTempDir && is_dir($photoTempDir)) {
+                $this->cleanupTempDir($photoTempDir);
+            }
+            foreach ($pageImages as $imagePath) {
+                if (file_exists($imagePath)) {
+                    @unlink($imagePath);
+                }
+            }
+            throw $e;
+        }
 
         $t4 = microtime(true);
         $this->logger->info('Import PDF - Réponse reçue', [
@@ -910,6 +927,18 @@ SYSTEM;
                 @rmdir($dir);
             }
         }
+    }
+
+    /**
+     * Supprimer un dossier temporaire et son contenu
+     */
+    private function cleanupTempDir(string $dir): void
+    {
+        $files = glob($dir . '/*');
+        foreach ($files as $file) {
+            @unlink($file);
+        }
+        @rmdir($dir);
     }
 
     // ========================================================================

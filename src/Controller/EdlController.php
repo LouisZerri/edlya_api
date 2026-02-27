@@ -2,12 +2,14 @@
 
 namespace App\Controller;
 
+use App\Controller\Trait\AuthorizationTrait;
 use App\Entity\Cle;
 use App\Entity\Compteur;
 use App\Entity\Element;
 use App\Entity\EtatDesLieux;
 use App\Entity\Piece;
 use App\Entity\User;
+use App\Repository\EtatDesLieuxRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,35 +18,30 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class EdlController extends AbstractController
 {
+    use AuthorizationTrait;
     #[Route('/api/edl/{id}/copier-depuis/{sourceId}', name: 'api_edl_copier_depuis', methods: ['POST'])]
     public function copierDepuis(
         int $id,
         int $sourceId,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        EtatDesLieuxRepository $edlRepo
     ): JsonResponse {
-        $user = $this->getUser();
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
-
-        $edlCible = $em->getRepository(EtatDesLieux::class)->find($id);
+        $edlCible = $edlRepo->findWithFullRelations($id);
         if (!$edlCible) {
             return new JsonResponse(['error' => 'EDL cible non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($edlCible->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edlCible, $user)) return $denied;
 
-        $edlSource = $em->getRepository(EtatDesLieux::class)->find($sourceId);
+        $edlSource = $edlRepo->findWithFullRelations($sourceId);
         if (!$edlSource) {
             return new JsonResponse(['error' => 'EDL source non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($edlSource->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edlSource, $user)) return $denied;
 
         // Vérifier que la cible n'a pas déjà de contenu
         if ($edlCible->getPieces()->count() > 0 || $edlCible->getCompteurs()->count() > 0 || $edlCible->getCles()->count() > 0) {

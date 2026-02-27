@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Controller\Trait\AuthorizationTrait;
 use App\Entity\EtatDesLieux;
 use App\Entity\User;
 use App\Service\EmailService;
@@ -14,6 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class EmailController extends AbstractController
 {
+    use AuthorizationTrait;
     public function __construct(
         private EntityManagerInterface $em,
         private EmailService $emailService,
@@ -23,11 +25,8 @@ class EmailController extends AbstractController
     #[Route('/api/edl/{id}/email/comparatif', name: 'api_edl_email_comparatif', methods: ['POST'])]
     public function sendComparatif(int $id, Request $request): JsonResponse
     {
-        $user = $this->getUser();
-
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
         $edl = $this->em->getRepository(EtatDesLieux::class)->find($id);
 
@@ -35,9 +34,7 @@ class EmailController extends AbstractController
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($edl->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edl, $user)) return $denied;
 
         $body = json_decode($request->getContent(), true) ?? [];
         $email = $body['email'] ?? '';
@@ -54,11 +51,8 @@ class EmailController extends AbstractController
     #[Route('/api/edl/{id}/email/estimations', name: 'api_edl_email_estimations', methods: ['POST'])]
     public function sendEstimations(int $id, Request $request): JsonResponse
     {
-        $user = $this->getUser();
-
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
         $edl = $this->em->getRepository(EtatDesLieux::class)->find($id);
 
@@ -66,9 +60,7 @@ class EmailController extends AbstractController
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($edl->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edl, $user)) return $denied;
 
         if ($edl->getType() !== 'sortie') {
             return new JsonResponse([

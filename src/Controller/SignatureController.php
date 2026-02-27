@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Controller\Trait\AuthorizationTrait;
 use App\Entity\EtatDesLieux;
 use App\Entity\User;
 use App\Service\EmailService;
@@ -14,6 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class SignatureController extends AbstractController
 {
+    use AuthorizationTrait;
     public function __construct(
         private EmailService $emailService
     ) {
@@ -25,11 +27,8 @@ class SignatureController extends AbstractController
     #[Route('/api/edl/{id}/signature', name: 'api_edl_signature_status', methods: ['GET'])]
     public function status(int $id, EntityManagerInterface $em): JsonResponse
     {
-        $user = $this->getUser();
-
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
         $edl = $em->getRepository(EtatDesLieux::class)->find($id);
 
@@ -37,9 +36,7 @@ class SignatureController extends AbstractController
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($edl->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edl, $user)) return $denied;
 
         return new JsonResponse([
             'edlId' => $edl->getId(),
@@ -55,11 +52,8 @@ class SignatureController extends AbstractController
     #[Route('/api/edl/{id}/signature/bailleur', name: 'api_edl_signature_bailleur', methods: ['POST'])]
     public function signerBailleur(int $id, Request $request, EntityManagerInterface $em): JsonResponse
     {
-        $user = $this->getUser();
-
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
         $edl = $em->getRepository(EtatDesLieux::class)->find($id);
 
@@ -67,9 +61,7 @@ class SignatureController extends AbstractController
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($edl->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edl, $user)) return $denied;
 
         if ($edl->getSignatureBailleur() !== null) {
             return new JsonResponse(['error' => 'Le bailleur a déjà signé'], Response::HTTP_BAD_REQUEST);
@@ -99,11 +91,8 @@ class SignatureController extends AbstractController
     #[Route('/api/edl/{id}/signature/locataire', name: 'api_edl_signature_locataire', methods: ['POST'])]
     public function signerLocataireDirecte(int $id, Request $request, EntityManagerInterface $em): JsonResponse
     {
-        $user = $this->getUser();
-
-        if (!$user instanceof User) {
-            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof JsonResponse) return $user;
 
         $edl = $em->getRepository(EtatDesLieux::class)->find($id);
 
@@ -111,9 +100,7 @@ class SignatureController extends AbstractController
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($edl->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
-        }
+        if ($denied = $this->denyUnlessOwner($edl, $user)) return $denied;
 
         if ($edl->getSignatureBailleur() === null) {
             return new JsonResponse([
