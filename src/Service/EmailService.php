@@ -27,23 +27,15 @@ class EmailService
      */
     public function sendSignatureConfirmation(EtatDesLieux $edl): void
     {
-        $debugLog = dirname(__DIR__, 2) . '/var/signature-debug.log';
-        file_put_contents($debugLog, date('Y-m-d H:i:s') . " - [EmailService] START sendSignatureConfirmation EDL #" . $edl->getId() . "\n", FILE_APPEND);
-
         $logement = $edl->getLogement();
 
-        file_put_contents($debugLog, date('Y-m-d H:i:s') . " - [EmailService] Rendering email Twig template...\n", FILE_APPEND);
         $html = $this->twig->render('emails/signature_confirmation.html.twig', [
             'edl' => $edl,
             'logement' => $logement,
             'bailleur' => $edl->getUser(),
         ]);
-        file_put_contents($debugLog, date('Y-m-d H:i:s') . " - [EmailService] Email Twig OK (" . strlen($html) . " bytes)\n", FILE_APPEND);
 
-        file_put_contents($debugLog, date('Y-m-d H:i:s') . " - [EmailService] Generating PDF... memory=" . round(memory_get_usage(true) / 1024 / 1024, 1) . "MB\n", FILE_APPEND);
         $pdfContent = $this->pdfGenerator->generateEtatDesLieux($edl);
-        file_put_contents($debugLog, date('Y-m-d H:i:s') . " - [EmailService] PDF OK (" . strlen($pdfContent) . " bytes) memory=" . round(memory_get_usage(true) / 1024 / 1024, 1) . "MB\n", FILE_APPEND);
-
         $pdfFilename = sprintf('etat_des_lieux_%s.pdf', $edl->getId());
 
         // Envoyer au locataire (si email renseigné)
