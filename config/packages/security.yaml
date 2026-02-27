@@ -47,8 +47,7 @@ security:
         - { path: ^/api/graphql, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/typologies, roles: PUBLIC_ACCESS }
         - { path: ^/api/degradations, roles: PUBLIC_ACCESS }
-        - { path: ^/api/signature/[a-f0-9]+, roles: PUBLIC_ACCESS }
-        - { path: ^/api/partage/[a-f0-9]+, roles: PUBLIC_ACCESS }
+        - { path: ^/api/partage/, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

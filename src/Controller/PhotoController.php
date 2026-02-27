@@ -90,21 +90,32 @@ class PhotoController extends AbstractController
         }
 
         // Valider le type de fichier
-        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heic', 'image/heif'];
         if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
             return new JsonResponse(
-                ['error' => 'Type de fichier non autorisé. Formats acceptés: JPEG, PNG, WebP, HEIC'],
+                ['error' => 'Type de fichier non autorisé. Formats acceptés: JPEG, PNG, WebP, AVIF, HEIC'],
                 Response::HTTP_BAD_REQUEST
             );
         }
 
         // Vérifier le contenu réel du fichier (protection contre le MIME spoofing)
         $imageInfo = @getimagesize($file->getPathname());
-        if ($imageInfo === false && !in_array($file->getMimeType(), ['image/heic', 'image/heif'])) {
-            return new JsonResponse(
-                ['error' => 'Le fichier ne semble pas être une image valide'],
-                Response::HTTP_BAD_REQUEST
-            );
+        if ($imageInfo === false) {
+            // Pour HEIC/HEIF, vérifier les magic bytes (ftyp à l'offset 4)
+            if (in_array($file->getMimeType(), ['image/heic', 'image/heif'])) {
+                $header = file_get_contents($file->getPathname(), false, null, 4, 4);
+                if ($header !== 'ftyp') {
+                    return new JsonResponse(
+                        ['error' => 'Le fichier ne semble pas être une image HEIC valide'],
+                        Response::HTTP_BAD_REQUEST
+                    );
+                }
+            } else {
+                return new JsonResponse(
+                    ['error' => 'Le fichier ne semble pas être une image valide'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
         }
 
         // Valider la taille (max 10 Mo)
@@ -252,21 +263,32 @@ class PhotoController extends AbstractController
         }
 
         // Valider le type de fichier
-        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heic', 'image/heif'];
         if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
             return new JsonResponse(
-                ['error' => 'Type de fichier non autorisé. Formats acceptés: JPEG, PNG, WebP, HEIC'],
+                ['error' => 'Type de fichier non autorisé. Formats acceptés: JPEG, PNG, WebP, AVIF, HEIC'],
                 Response::HTTP_BAD_REQUEST
             );
         }
 
         // Vérifier le contenu réel du fichier (protection contre le MIME spoofing)
         $imageInfo = @getimagesize($file->getPathname());
-        if ($imageInfo === false && !in_array($file->getMimeType(), ['image/heic', 'image/heif'])) {
-            return new JsonResponse(
-                ['error' => 'Le fichier ne semble pas être une image valide'],
-                Response::HTTP_BAD_REQUEST
-            );
+        if ($imageInfo === false) {
+            // Pour HEIC/HEIF, vérifier les magic bytes (ftyp à l'offset 4)
+            if (in_array($file->getMimeType(), ['image/heic', 'image/heif'])) {
+                $header = file_get_contents($file->getPathname(), false, null, 4, 4);
+                if ($header !== 'ftyp') {
+                    return new JsonResponse(
+                        ['error' => 'Le fichier ne semble pas être une image HEIC valide'],
+                        Response::HTTP_BAD_REQUEST
+                    );
+                }
+            } else {
+                return new JsonResponse(
+                    ['error' => 'Le fichier ne semble pas être une image valide'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
         }
 
         // Valider la taille (max 10 Mo)
@@ -416,21 +438,32 @@ class PhotoController extends AbstractController
         }
 
         // Valider le type de fichier
-        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heic', 'image/heif'];
         if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
             return new JsonResponse(
-                ['error' => 'Type de fichier non autorisé. Formats acceptés: JPEG, PNG, WebP, HEIC'],
+                ['error' => 'Type de fichier non autorisé. Formats acceptés: JPEG, PNG, WebP, AVIF, HEIC'],
                 Response::HTTP_BAD_REQUEST
             );
         }
 
         // Vérifier le contenu réel du fichier (protection contre le MIME spoofing)
         $imageInfo = @getimagesize($file->getPathname());
-        if ($imageInfo === false && !in_array($file->getMimeType(), ['image/heic', 'image/heif'])) {
-            return new JsonResponse(
-                ['error' => 'Le fichier ne semble pas être une image valide'],
-                Response::HTTP_BAD_REQUEST
-            );
+        if ($imageInfo === false) {
+            // Pour HEIC/HEIF, vérifier les magic bytes (ftyp à l'offset 4)
+            if (in_array($file->getMimeType(), ['image/heic', 'image/heif'])) {
+                $header = file_get_contents($file->getPathname(), false, null, 4, 4);
+                if ($header !== 'ftyp') {
+                    return new JsonResponse(
+                        ['error' => 'Le fichier ne semble pas être une image HEIC valide'],
+                        Response::HTTP_BAD_REQUEST
+                    );
+                }
+            } else {
+                return new JsonResponse(
+                    ['error' => 'Le fichier ne semble pas être une image valide'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
         }
 
         // Valider la taille (max 10 Mo)

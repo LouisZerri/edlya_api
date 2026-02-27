@@ -74,7 +74,11 @@ class SignatureController extends AbstractController
             return new JsonResponse(['error' => 'La signature est requise'], Response::HTTP_BAD_REQUEST);
         }
 
-        // La signature est un SVG encodé en base64
+        // Limiter la taille (500 Ko max pour un SVG base64)
+        if (strlen($signature) > 500000) {
+            return new JsonResponse(['error' => 'La signature est trop volumineuse'], Response::HTTP_BAD_REQUEST);
+        }
+
         $edl->setSignatureBailleur($signature);
         $edl->setDateSignatureBailleur(new \DateTimeImmutable());
         $edl->setStatut('termine');
@@ -117,6 +121,10 @@ class SignatureController extends AbstractController
 
         if (empty($signature)) {
             return new JsonResponse(['error' => 'La signature est requise'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (strlen($signature) > 500000) {
+            return new JsonResponse(['error' => 'La signature est trop volumineuse'], Response::HTTP_BAD_REQUEST);
         }
 
         $edl->setSignatureLocataire($signature);

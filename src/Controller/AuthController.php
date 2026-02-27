@@ -34,15 +34,41 @@ class AuthController extends AbstractController
             return new JsonResponse(['error' => 'Email, password et name requis'], Response::HTTP_BAD_REQUEST);
         }
 
-        $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $data['email']]);
+        $email = trim($data['email']);
+        $password = $data['password'];
+        $name = trim($data['name']);
+        $telephone = isset($data['telephone']) ? trim($data['telephone']) : null;
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return new JsonResponse(['error' => 'Format d\'email invalide'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (strlen($name) < 2 || strlen($name) > 100) {
+            return new JsonResponse(['error' => 'Le nom doit contenir entre 2 et 100 caractères'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (strlen($password) < 8
+            || !preg_match('/[A-Z]/', $password)
+            || !preg_match('/[a-z]/', $password)
+            || !preg_match('/[0-9]/', $password)
+            || !preg_match('/[^a-zA-Z0-9]/', $password)
+        ) {
+            return new JsonResponse(['error' => 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($telephone !== null && strlen($telephone) > 20) {
+            return new JsonResponse(['error' => 'Numéro de téléphone trop long'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $email]);
         if ($existingUser) {
             return new JsonResponse(['error' => 'Email déjà utilisé'], Response::HTTP_CONFLICT);
         }
 
         $user = new User();
-        $user->setEmail($data['email']);
-        $user->setName($data['name']);
-        $user->setTelephone($data['telephone'] ?? null);
+        $user->setEmail($email);
+        $user->setName($name);
+        $user->setTelephone($telephone);
         $user->setPassword($passwordHasher->hashPassword($user, $data['password']));
         $user->setCreatedAt(new \DateTimeImmutable());
         $user->setUpdatedAt(new \DateTimeImmutable());
@@ -91,11 +117,19 @@ class AuthController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         if (isset($data['name']) && !empty($data['name'])) {
-            $user->setName($data['name']);
+            $name = trim($data['name']);
+            if (strlen($name) < 2 || strlen($name) > 100) {
+                return new JsonResponse(['error' => 'Le nom doit contenir entre 2 et 100 caractères'], Response::HTTP_BAD_REQUEST);
+            }
+            $user->setName($name);
         }
 
         if (array_key_exists('telephone', $data)) {
-            $user->setTelephone($data['telephone'] ?: null);
+            $telephone = $data['telephone'] ? trim($data['telephone']) : null;
+            if ($telephone !== null && strlen($telephone) > 20) {
+                return new JsonResponse(['error' => 'Numéro de téléphone trop long'], Response::HTTP_BAD_REQUEST);
+            }
+            $user->setTelephone($telephone);
         }
 
         $user->setUpdatedAt(new \DateTimeImmutable());
@@ -202,10 +236,15 @@ class AuthController extends AbstractController
 
         $password = $data['password'];
 
-        // Validation du mot de passe (minimum 8 caractères)
-        if (strlen($password) < 8) {
+        // Validation du mot de passe
+        if (strlen($password) < 8
+            || !preg_match('/[A-Z]/', $password)
+            || !preg_match('/[a-z]/', $password)
+            || !preg_match('/[0-9]/', $password)
+            || !preg_match('/[^a-zA-Z0-9]/', $password)
+        ) {
             return new JsonResponse([
-                'error' => 'Le mot de passe doit contenir au moins 8 caractères'
+                'error' => 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial'
             ], Response::HTTP_BAD_REQUEST);
         }
 

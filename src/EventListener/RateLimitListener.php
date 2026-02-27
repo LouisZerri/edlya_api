@@ -17,32 +17,50 @@ class RateLimitListener
         private RateLimiterFactory $authRegisterLimiter,
         private RateLimiterFactory $authForgotPasswordLimiter,
         private RateLimiterFactory $authResetPasswordLimiter,
+        private RateLimiterFactory $apiAiLimiter,
+        private RateLimiterFactory $apiUploadLimiter,
+        private RateLimiterFactory $apiEmailLimiter,
     ) {
     }
 
     public function __invoke(RequestEvent $event): void
     {
         $request = $event->getRequest();
-
-        if (!$request->isMethod('POST')) {
-            return;
-        }
-
         $path = $request->getPathInfo();
         $ip = $request->getClientIp();
 
-        $limiter = match ($path) {
-            '/api/login' => $this->authLoginLimiter,
-            '/api/register' => $this->authRegisterLimiter,
-            '/api/auth/forgot-password' => $this->authForgotPasswordLimiter,
-            '/api/auth/reset-password' => $this->authResetPasswordLimiter,
+        // Routes POST exactes
+        if ($request->isMethod('POST')) {
+            $limiter = match ($path) {
+                '/api/login' => $this->authLoginLimiter,
+                '/api/register' => $this->authRegisterLimiter,
+                '/api/auth/forgot-password' => $this->authForgotPasswordLimiter,
+                '/api/auth/reset-password' => $this->authResetPasswordLimiter,
+                default => null,
+            };
+
+            if ($limiter !== null) {
+                $this->applyLimit($event, $limiter, $ip);
+                return;
+            }
+        }
+
+        // Routes par préfixe (POST et GET)
+        $limiter = match (true) {
+            str_starts_with($path, '/api/ai/') => $this->apiAiLimiter,
+            str_starts_with($path, '/api/upload/') => $this->apiUploadLimiter,
+            str_contains($path, '/email/') && str_starts_with($path, '/api/edl/') => $this->apiEmailLimiter,
+            str_starts_with($path, '/api/aide/') => $this->apiAiLimiter,
             default => null,
         };
 
-        if ($limiter === null) {
-            return;
+        if ($limiter !== null) {
+            $this->applyLimit($event, $limiter, $ip);
         }
+    }
 
+    private function applyLimit(RequestEvent $event, RateLimiterFactory $limiter, string $ip): void
+    {
         $limit = $limiter->create($ip)->consume();
 
         if (!$limit->isAccepted()) {

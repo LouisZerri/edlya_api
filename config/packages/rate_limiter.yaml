@@ -23,3 +23,21 @@ framework:
             policy: sliding_window
             limit: 5
             interval: '1 hour'
+
+        # Endpoints IA : 30 appels par heure par IP (coûts OpenAI)
+        api_ai:
+            policy: sliding_window
+            limit: 30
+            interval: '1 hour'
+
+        # Upload photos : 120 par heure par IP
+        api_upload:
+            policy: sliding_window
+            limit: 120
+            interval: '1 hour'
+
+        # Envoi d'emails : 10 par heure par IP
+        api_email:
+            policy: sliding_window
+            limit: 10
+            interval: '1 hour'
