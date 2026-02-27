@@ -17,7 +17,15 @@
         <strong>Locataire :</strong> {{ edl.locataireNom }}
     </div>
 
-    <p>
-        Vous trouverez l'état des lieux complet en pièce jointe de cet email (format PDF).
+    <p style="text-align: center;">
+        <a href="{{ shareUrl }}" class="btn">Consulter l'état des lieux</a>
     </p>
+
+    <p>
+        Vous trouverez également l'état des lieux complet en pièce jointe de cet email (format PDF).
+    </p>
+
+    <div class="warning">
+        Ce lien est valable 7 jours. Passé ce délai, il ne sera plus accessible.
+    </div>
 {% endblock %}

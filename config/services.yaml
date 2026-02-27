@@ -45,6 +45,7 @@ services:
         arguments:
             $fromEmail: '%env(MAILER_FROM_EMAIL)%'
             $fromName: '%env(MAILER_FROM_NAME)%'
+            $frontendUrl: '%env(FRONTEND_URL)%'
 
     App\Command\TestEmailCommand:
         arguments:

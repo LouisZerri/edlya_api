@@ -18,7 +18,8 @@ class EmailService
         private PdfGenerator $pdfGenerator,
         private EntityManagerInterface $em,
         private string $fromEmail,
-        private string $fromName
+        private string $fromName,
+        private string $frontendUrl
     ) {
     }
 
@@ -80,10 +81,13 @@ class EmailService
         $edl = $partage->getEtatDesLieux();
         $logement = $edl->getLogement();
 
+        $shareUrl = rtrim($this->frontendUrl, '/') . '/p/' . $partage->getToken();
+
         $html = $this->twig->render('emails/partage_link.html.twig', [
             'edl' => $edl,
             'logement' => $logement,
             'bailleur' => $edl->getUser(),
+            'shareUrl' => $shareUrl,
         ]);
 
         $pdfContent = $this->pdfGenerator->generateEtatDesLieux($edl);
