@@ -48,35 +48,22 @@ class PdfGenerator
             'projectDir' => $this->projectDir,
         ]);
 
-        // Redimensionner les images pour réduire la taille du PDF
-        $tempFiles = [];
-        $html = preg_replace_callback('/file:\/\/([^"\'>\s]+)/', function ($matches) use (&$tempFiles) {
+        // Redimensionner les images et les convertir en data URI base64
+        $html = preg_replace_callback('/file:\/\/([^"\'>\s]+)/', function ($matches) {
             $originalPath = $matches[1];
-            $resized = $this->resizeImageForPdf($originalPath);
-            if ($resized) {
-                $tempFiles[] = $resized;
-                return 'file://' . $resized;
-            }
-            return $matches[0];
+            $dataUri = $this->resizeImageForPdf($originalPath);
+            return $dataUri ?? $matches[0];
         }, $html);
 
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
-        $output = $dompdf->output();
-
-        // Nettoyer les fichiers temporaires
-        foreach ($tempFiles as $tmpFile) {
-            @unlink($tmpFile);
-        }
-
-        return $output;
+        return $dompdf->output();
     }
 
     /**
-     * Redimensionne une image à max 1200px et la compresse en JPEG 85%.
-     * Retourne le chemin du fichier temporaire, ou null si échec.
+     * Redimensionne une image à max 1200px et retourne un data URI base64.
      */
     private function resizeImageForPdf(string $originalPath, int $maxDim = 1200, int $quality = 85): ?string
     {
@@ -91,11 +78,6 @@ class PdfGenerator
 
         [$origW, $origH] = $info;
         $mime = $info['mime'];
-
-        // Déjà petite et JPEG → pas besoin de redimensionner
-        if ($origW <= $maxDim && $origH <= $maxDim && $mime === 'image/jpeg' && filesize($originalPath) < 200000) {
-            return null;
-        }
 
         $source = match ($mime) {
             'image/jpeg' => @imagecreatefromjpeg($originalPath),
@@ -116,13 +98,14 @@ class PdfGenerator
         $dest = imagecreatetruecolor($newW, $newH);
         imagecopyresampled($dest, $source, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
 
-        $tmpFile = tempnam(sys_get_temp_dir(), 'edlya_pdf_') . '.jpg';
-        imagejpeg($dest, $tmpFile, $quality);
+        ob_start();
+        imagejpeg($dest, null, $quality);
+        $jpegData = ob_get_clean();
 
         imagedestroy($source);
         imagedestroy($dest);
 
-        return $tmpFile;
+        return 'data:image/jpeg;base64,' . base64_encode($jpegData);
     }
 
     public function generateComparatif(array $data): string
