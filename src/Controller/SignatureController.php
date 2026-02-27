@@ -139,14 +139,18 @@ class SignatureController extends AbstractController
 
         // Envoyer l'email de confirmation
         $emailSent = false;
+        file_put_contents('/tmp/edlya-signature-debug.log', date('Y-m-d H:i:s') . " - EDL #{$edl->getId()} flush OK, avant email\n", FILE_APPEND);
         try {
             $this->emailService->sendSignatureConfirmation($edl);
             $emailSent = true;
+            file_put_contents('/tmp/edlya-signature-debug.log', date('Y-m-d H:i:s') . " - Email envoyé OK\n", FILE_APPEND);
         } catch (\Throwable $e) {
+            file_put_contents('/tmp/edlya-signature-debug.log', date('Y-m-d H:i:s') . " - ERREUR: " . $e->getMessage() . "\n" . $e->getTraceAsString() . "\n", FILE_APPEND);
             $this->logger->error('Erreur envoi email signature EDL #' . $edl->getId() . ': ' . $e->getMessage(), [
                 'exception' => $e,
             ]);
         }
+        file_put_contents('/tmp/edlya-signature-debug.log', date('Y-m-d H:i:s') . " - Fin, retour JSON\n", FILE_APPEND);
 
         $response = [
             'message' => 'Signature locataire enregistrée',
