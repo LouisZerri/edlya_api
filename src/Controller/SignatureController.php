@@ -135,18 +135,27 @@ class SignatureController extends AbstractController
 
         $em->flush();
 
-        // Envoyer l'email de confirmation aux deux parties
+        // Envoyer l'email de confirmation
+        $emailSent = false;
         try {
             $this->emailService->sendSignatureConfirmation($edl);
-        } catch (\Exception $e) {
-            // Log l'erreur mais ne bloque pas
+            $emailSent = true;
+        } catch (\Throwable $e) {
+            // Log l'erreur mais ne bloque pas la signature
         }
 
-        return new JsonResponse([
+        $response = [
             'message' => 'Signature locataire enregistrée',
             'dateSignatureLocataire' => $edl->getDateSignatureLocataire()->format('Y-m-d H:i:s'),
             'statut' => $edl->getStatut(),
-        ]);
+            'emailSent' => $emailSent,
+        ];
+
+        if (empty($edl->getLocataireEmail())) {
+            $response['warning'] = 'Le locataire n\'a pas d\'adresse email. L\'email de confirmation n\'a pas pu lui être envoyé.';
+        }
+
+        return new JsonResponse($response);
     }
 
     // ==========================================

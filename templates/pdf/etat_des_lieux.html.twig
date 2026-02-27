@@ -859,7 +859,7 @@
                 Document signé conformément aux articles 1366 et 1367 du Code civil.<br><br>
                 <strong>Bailleur :</strong> {{ edl.logement.user.nom|default(edl.logement.user.email) }} - Signé le {{ edl.dateSignatureBailleur|date('d/m/Y à H:i') }}<br>
                 <strong>Locataire :</strong> {{ edl.locataireNom }}{% if edl.autresLocataires is defined and edl.autresLocataires %} (représentant également {{ edl.autresLocataires|join(', ') }}){% endif %} - Signé le {{ edl.dateSignatureLocataire|date('d/m/Y à H:i') }}<br>
-                Email vérifié : {{ edl.locataireEmail }}<br>
+                {% if edl.locataireEmail %}Email vérifié : {{ edl.locataireEmail }}<br>{% endif %}
                 IP : {{ edl.signatureIp }}
             </div>
         {% endif %}
