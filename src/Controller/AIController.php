@@ -11,6 +11,7 @@ use App\Entity\Logement;
 use App\Entity\Photo;
 use App\Entity\Piece;
 use App\Entity\User;
+use App\Repository\EtatDesLieuxRepository;
 use App\Service\AIService;
 use App\Service\EstimationService;
 use App\Service\ImportValidationService;
@@ -30,6 +31,7 @@ class AIController extends AbstractController
         private EstimationService $estimationService,
         private ImportValidationService $validationService,
         private EntityManagerInterface $em,
+        private EtatDesLieuxRepository $edlRepository,
         private string $photoDirectory
     ) {
     }
@@ -590,7 +592,6 @@ class AIController extends AbstractController
                 $piece->setNom($pieceData['nom']);
                 $piece->setOrdre($ordre++);
                 $this->em->persist($piece);
-                $this->em->flush(); // Need piece ID for elements
 
                 $elementOrdre = 0;
                 foreach ($pieceData['elements'] ?? [] as $elementData) {
@@ -602,7 +603,6 @@ class AIController extends AbstractController
                     $element->setObservations($elementData['observations'] ?? null);
                     $element->setOrdre($elementOrdre++);
                     $this->em->persist($element);
-                    $this->em->flush(); // Need element ID for photos
 
                     // Mapper les photos aux éléments via photo_indices
                     if (!empty($elementData['photo_indices']) && !empty($savedPhotos)) {
@@ -631,7 +631,6 @@ class AIController extends AbstractController
                     $vueElement->setEtat('bon');
                     $vueElement->setOrdre($elementOrdre++);
                     $this->em->persist($vueElement);
-                    $this->em->flush();
 
                     $photoOrdre = 0;
                     foreach ($pieceData['photo_indices'] as $photoIdx) {
@@ -696,15 +695,8 @@ class AIController extends AbstractController
             return new JsonResponse(['error' => 'Logement non trouvé'], Response::HTTP_NOT_FOUND);
         }
 
-        $edlEntree = $this->em->getRepository(EtatDesLieux::class)->findOneBy(
-            ['logement' => $logement, 'type' => 'entree', 'statut' => ['termine', 'signe']],
-            ['dateRealisation' => 'DESC']
-        );
-
-        $edlSortie = $this->em->getRepository(EtatDesLieux::class)->findOneBy(
-            ['logement' => $logement, 'type' => 'sortie', 'statut' => ['termine', 'signe']],
-            ['dateRealisation' => 'DESC']
-        );
+        $edlEntree = $this->edlRepository->findLastByLogementTypeAndStatuts($logement, 'entree', ['termine', 'signe']);
+        $edlSortie = $this->edlRepository->findLastByLogementTypeAndStatuts($logement, 'sortie', ['termine', 'signe']);
 
         if (!$edlEntree || !$edlSortie) {
             return new JsonResponse([
@@ -760,7 +752,7 @@ class AIController extends AbstractController
             return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
         }
 
-        $edlSortie = $this->em->getRepository(EtatDesLieux::class)->find($edlId);
+        $edlSortie = $this->edlRepository->findWithFullRelations($edlId);
         if (!$edlSortie || $edlSortie->getUser()->getId() !== $user->getId()) {
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
@@ -776,10 +768,7 @@ class AIController extends AbstractController
 
         $logement = $edlSortie->getLogement();
 
-        $edlEntree = $this->em->getRepository(EtatDesLieux::class)->findOneBy(
-            ['logement' => $logement, 'type' => 'entree'],
-            ['dateRealisation' => 'DESC']
-        );
+        $edlEntree = $this->edlRepository->findLastByLogementAndType($logement, 'entree');
 
         $estimations = $this->estimationService->calculerEstimations($edlEntree, $edlSortie, $depotGarantie);
 
@@ -801,7 +790,7 @@ class AIController extends AbstractController
             return new JsonResponse(['error' => 'Service IA non configuré'], Response::HTTP_SERVICE_UNAVAILABLE);
         }
 
-        $edlSortie = $this->em->getRepository(EtatDesLieux::class)->find($edlId);
+        $edlSortie = $this->edlRepository->findWithFullRelations($edlId);
         if (!$edlSortie || $edlSortie->getUser()->getId() !== $user->getId()) {
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
         }
@@ -811,10 +800,7 @@ class AIController extends AbstractController
         }
 
         $logement = $edlSortie->getLogement();
-        $edlEntree = $this->em->getRepository(EtatDesLieux::class)->findOneBy(
-            ['logement' => $logement, 'type' => 'entree'],
-            ['dateRealisation' => 'DESC']
-        );
+        $edlEntree = $this->edlRepository->findLastByLogementAndType($logement, 'entree');
 
         // Collecter les dégradations
         $degradations = $this->estimationService->collecterDegradations(

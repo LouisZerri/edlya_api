@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\EtatDesLieux;
 use App\Entity\Partage;
+use App\Repository\EtatDesLieuxRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
@@ -16,7 +17,7 @@ class EmailService
         private MailerInterface $mailer,
         private Environment $twig,
         private PdfGenerator $pdfGenerator,
-        private EntityManagerInterface $em,
+        private EtatDesLieuxRepository $edlRepository,
         private string $fromEmail,
         private string $fromName,
         private string $frontendUrl
@@ -116,16 +117,10 @@ class EmailService
         // Déterminer entrée et sortie
         if ($edl->getType() === 'sortie') {
             $edlSortie = $edl;
-            $edlEntree = $this->em->getRepository(EtatDesLieux::class)->findOneBy(
-                ['logement' => $logement, 'type' => 'entree'],
-                ['dateRealisation' => 'DESC']
-            );
+            $edlEntree = $this->edlRepository->findLastByLogementAndType($logement, 'entree');
         } else {
             $edlEntree = $edl;
-            $edlSortie = $this->em->getRepository(EtatDesLieux::class)->findOneBy(
-                ['logement' => $logement, 'type' => 'sortie'],
-                ['dateRealisation' => 'DESC']
-            );
+            $edlSortie = $this->edlRepository->findLastByLogementAndType($logement, 'sortie');
         }
 
         $comparatif = $this->buildComparatif($edlEntree, $edlSortie);

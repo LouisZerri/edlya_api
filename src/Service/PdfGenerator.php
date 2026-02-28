@@ -3,7 +3,7 @@
 namespace App\Service;
 
 use App\Entity\EtatDesLieux;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\EtatDesLieuxRepository;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Twig\Environment;
@@ -13,7 +13,7 @@ class PdfGenerator
     public function __construct(
         private Environment $twig,
         private string $projectDir,
-        private EntityManagerInterface $em,
+        private EtatDesLieuxRepository $edlRepository,
     ) {}
 
     public function generateEtatDesLieux(EtatDesLieux $edl): string
@@ -32,10 +32,7 @@ class PdfGenerator
         // Pour les EDL de sortie, récupérer l'EDL d'entrée correspondant
         $edlEntree = null;
         if ($edl->getType() === 'sortie') {
-            $edlEntree = $this->em->getRepository(EtatDesLieux::class)->findOneBy(
-                ['logement' => $logement, 'type' => 'entree'],
-                ['dateRealisation' => 'DESC']
-            );
+            $edlEntree = $this->edlRepository->findLastByLogementAndType($logement, 'entree');
         }
 
         $html = $this->twig->render('pdf/etat_des_lieux.html.twig', [
