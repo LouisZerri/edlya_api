@@ -28,36 +28,23 @@ class StatsController extends AbstractController
             return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
         }
 
-        $userId = $user->getId();
-
-        // Total logements
-        $totalLogements = $this->em->getRepository(Logement::class)
-            ->count(['user' => $user]);
-
-        // Total EDL
-        $totalEdl = $this->em->getRepository(EtatDesLieux::class)
-            ->count(['user' => $user]);
-
-        // EDL en attente (brouillon + en_cours)
-        $qb = $this->em->createQueryBuilder();
-        $edlEnAttente = $qb->select('COUNT(e.id)')
+        // Tous les compteurs EDL en 1 seule requête (au lieu de 5)
+        $edlStats = $this->em->createQueryBuilder()
+            ->select(
+                'COUNT(e.id) AS total_edl',
+                "SUM(CASE WHEN e.statut IN ('brouillon', 'en_cours') THEN 1 ELSE 0 END) AS edl_en_attente",
+                "SUM(CASE WHEN e.statut = 'signe' THEN 1 ELSE 0 END) AS edl_signes",
+                "SUM(CASE WHEN e.type = 'entree' THEN 1 ELSE 0 END) AS edl_entree",
+                "SUM(CASE WHEN e.type = 'sortie' THEN 1 ELSE 0 END) AS edl_sortie"
+            )
             ->from(EtatDesLieux::class, 'e')
             ->where('e.user = :user')
-            ->andWhere($qb->expr()->in('e.statut', ['brouillon', 'en_cours']))
             ->setParameter('user', $user)
             ->getQuery()
-            ->getSingleScalarResult();
+            ->getSingleResult();
 
-        // EDL signés
-        $edlSignes = $this->em->getRepository(EtatDesLieux::class)
-            ->count(['user' => $user, 'statut' => 'signe']);
-
-        // Répartition entrée/sortie
-        $edlEntreeCount = $this->em->getRepository(EtatDesLieux::class)
-            ->count(['user' => $user, 'type' => 'entree']);
-
-        $edlSortieCount = $this->em->getRepository(EtatDesLieux::class)
-            ->count(['user' => $user, 'type' => 'sortie']);
+        $totalLogements = $this->em->getRepository(Logement::class)
+            ->count(['user' => $user]);
 
         // Activité EDL sur les 14 derniers jours
         $activity = [];
@@ -104,11 +91,11 @@ class StatsController extends AbstractController
             'success' => true,
             'stats' => [
                 'total_logements' => (int) $totalLogements,
-                'total_edl' => (int) $totalEdl,
-                'edl_en_attente' => (int) $edlEnAttente,
-                'edl_signes' => (int) $edlSignes,
-                'edl_entree_count' => (int) $edlEntreeCount,
-                'edl_sortie_count' => (int) $edlSortieCount,
+                'total_edl' => (int) $edlStats['total_edl'],
+                'edl_en_attente' => (int) $edlStats['edl_en_attente'],
+                'edl_signes' => (int) $edlStats['edl_signes'],
+                'edl_entree_count' => (int) $edlStats['edl_entree'],
+                'edl_sortie_count' => (int) $edlStats['edl_sortie'],
             ],
             'logements_sans_edl' => $logementsSansEdl,
             'activity' => array_values($activity),

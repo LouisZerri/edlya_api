@@ -440,6 +440,114 @@ PROMPT;
         }
     }
 
+    /**
+     * Analyse TOUTES les dégradations en un seul appel IA (au lieu de N appels séquentiels)
+     *
+     * @param array<int, array{piece: string, element: string, type: string, etat_entree: string, etat_sortie: string, observations: string}> $degradations
+     * @param array<string, array<int, array{nom: string, unite: string, prix_unitaire: float}>> $prixParType
+     * @return array<int, array{degradations: array}>|null
+     */
+    public function analyserDegradationsEnLot(array $degradations, array $prixParType = []): ?array
+    {
+        if (!$this->client || empty($degradations)) {
+            return null;
+        }
+
+        // Construire la liste des dégradations pour le prompt
+        $degradationsList = '';
+        foreach ($degradations as $index => $deg) {
+            $num = $index + 1;
+            $prixContext = '';
+            $prixRef = $prixParType[$deg['type']] ?? [];
+            if (!empty($prixRef)) {
+                $refs = array_map(fn($r) => "{$r['nom']}: {$r['prix_unitaire']}€/{$r['unite']}", $prixRef);
+                $prixContext = ' | Prix réf: ' . implode(', ', $refs);
+            }
+
+            $degradationsList .= "{$num}. Pièce: {$deg['piece']} | Élément: {$deg['element']} (type: {$deg['type']}) | ";
+            $degradationsList .= "État entrée: {$deg['etat_entree']} → sortie: {$deg['etat_sortie']}";
+            if (!empty($deg['observations'])) {
+                $degradationsList .= " | Obs: {$deg['observations']}";
+            }
+            $degradationsList .= $prixContext . "\n";
+        }
+
+        $count = count($degradations);
+
+        $prompt = <<<PROMPT
+Tu es un expert en estimation de travaux immobiliers pour états des lieux.
+
+Analyse ces {$count} dégradations et propose des lignes de devis détaillées pour CHACUNE.
+
+DÉGRADATIONS À ANALYSER :
+{$degradationsList}
+
+Réponds en JSON avec cette structure exacte :
+{
+  "items": [
+    {
+      "index": 1,
+      "degradations": [
+        {
+          "description": "Description précise de la réparation",
+          "gravite": "legere|moyenne|importante|critique",
+          "reparation": "Type d'intervention détaillé",
+          "unite": "m2|unite|ml|forfait",
+          "quantite_estimee": 1,
+          "prix_unitaire_estime": 0.00
+        }
+      ]
+    }
+  ]
+}
+
+Règles :
+- Réponds pour CHAQUE dégradation numérotée (index = numéro de la dégradation)
+- Utilise les prix de référence fournis quand disponibles
+- Estime des quantités réalistes (surface murale ~10-15m² par pièce, etc.)
+- Si l'état est "usage", propose des interventions légères (nettoyage, retouches)
+- Si "mauvais" ou "hors_service", propose des interventions lourdes (remplacement, réfection)
+PROMPT;
+
+        try {
+            $response = $this->client->chat()->create([
+                'model' => $this->model,
+                'messages' => [
+                    [
+                        'role' => 'system',
+                        'content' => 'Tu es un expert en estimation de travaux immobiliers en France. Tu produis des devis détaillés et réalistes. Réponds uniquement en JSON valide.',
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => $prompt,
+                    ],
+                ],
+                'max_tokens' => 3000,
+                'response_format' => ['type' => 'json_object'],
+            ]);
+
+            $result = $this->parseResponse($response);
+
+            if (!$result || empty($result['items'])) {
+                return null;
+            }
+
+            // Indexer par numéro pour lookup rapide
+            $indexed = [];
+            foreach ($result['items'] as $item) {
+                $idx = ($item['index'] ?? 0) - 1;
+                if ($idx >= 0 && isset($item['degradations'])) {
+                    $indexed[$idx] = $item;
+                }
+            }
+
+            return $indexed;
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur analyserDegradationsEnLot', ['message' => $e->getMessage()]);
+            return null;
+        }
+    }
+
     // ========================================================================
     //  Pipeline d'import PDF (méthodes privées)
     // ========================================================================

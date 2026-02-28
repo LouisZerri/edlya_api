@@ -828,56 +828,45 @@ class AIController extends AbstractController
             ];
         }
 
+        // Préparer les données pour l'appel IA en lot
+        $degradationsForAI = array_map(fn($d) => [
+            'piece' => $d['piece'],
+            'element' => $d['element'],
+            'type' => $d['type'],
+            'etat_entree' => $d['etat_entree'] ?? 'bon',
+            'etat_sortie' => $d['etat_sortie'],
+            'observations' => $d['observations'] ?? '',
+        ], $degradations);
+
+        // 1 seul appel IA pour toutes les dégradations (au lieu de N appels séquentiels)
+        $batchResult = $this->aiService->analyserDegradationsEnLot($degradationsForAI, $prixParType);
+
         $lignes = [];
         $totalEstime = 0;
 
-        foreach ($degradations as $deg) {
-            // Trouver la 1ère photo de l'élément (si disponible)
-            $imagePath = null;
-            if (!empty($deg['photos'])) {
-                $chemin = $deg['photos'][0]['chemin'] ?? null;
-                if ($chemin) {
-                    $fullPath = $this->photoDirectory . '/' . ltrim($chemin, '/uploads/photos/');
-                    if (file_exists($fullPath)) {
-                        $imagePath = $fullPath;
-                    }
+        foreach ($degradations as $index => $deg) {
+            $analyse = $batchResult[$index] ?? null;
+
+            if ($analyse && !empty($analyse['degradations'])) {
+                foreach ($analyse['degradations'] as $item) {
+                    $quantite = (float) ($item['quantite_estimee'] ?? 1);
+                    $prixUnitaire = (float) ($item['prix_unitaire_estime'] ?? 0);
+                    $total = round($quantite * $prixUnitaire, 2);
+
+                    $lignes[] = [
+                        'piece' => $deg['piece'],
+                        'element' => $deg['element'],
+                        'description' => $item['reparation'] ?? $item['description'] ?? 'Réparation',
+                        'unite' => $item['unite'] ?? 'forfait',
+                        'quantite' => $quantite,
+                        'prix_unitaire' => $prixUnitaire,
+                        'total' => $total,
+                    ];
+
+                    $totalEstime += $total;
                 }
-            }
-
-            $prixRef = $prixParType[$deg['type']] ?? [];
-
-            try {
-                $analyse = $this->aiService->analyserDegradationPourDevis(
-                    $imagePath,
-                    $deg['element'],
-                    $deg['type'],
-                    $deg['etat_entree'] ?? 'bon',
-                    $deg['etat_sortie'],
-                    $deg['observations'] ?? '',
-                    $prixRef
-                );
-
-                if ($analyse && !empty($analyse['degradations'])) {
-                    foreach ($analyse['degradations'] as $item) {
-                        $quantite = (float) ($item['quantite_estimee'] ?? 1);
-                        $prixUnitaire = (float) ($item['prix_unitaire_estime'] ?? 0);
-                        $total = round($quantite * $prixUnitaire, 2);
-
-                        $lignes[] = [
-                            'piece' => $deg['piece'],
-                            'element' => $deg['element'],
-                            'description' => $item['reparation'] ?? $item['description'] ?? 'Réparation',
-                            'unite' => $item['unite'] ?? 'forfait',
-                            'quantite' => $quantite,
-                            'prix_unitaire' => $prixUnitaire,
-                            'total' => $total,
-                        ];
-
-                        $totalEstime += $total;
-                    }
-                }
-            } catch (\Exception $e) {
-                // En cas d'échec IA pour un élément, créer une ligne basique
+            } else {
+                // Fallback si l'IA n'a pas retourné de résultat pour cet élément
                 $intervention = $this->estimationService->determinerIntervention($deg['etat_sortie']);
                 $coutBrut = EstimationService::TARIFS_ELEMENTS[$deg['type']][$intervention] ?? 80;
 
