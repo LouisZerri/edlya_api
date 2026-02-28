@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Controller\Trait\AuthorizationTrait;
 use App\Entity\EtatDesLieux;
 use App\Entity\User;
+use App\Repository\EtatDesLieuxRepository;
 use App\Service\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,6 +19,7 @@ class EmailController extends AbstractController
     use AuthorizationTrait;
     public function __construct(
         private EntityManagerInterface $em,
+        private EtatDesLieuxRepository $edlRepository,
         private EmailService $emailService,
     ) {
     }
@@ -28,7 +30,7 @@ class EmailController extends AbstractController
         $user = $this->getAuthenticatedUser();
         if ($user instanceof JsonResponse) return $user;
 
-        $edl = $this->em->getRepository(EtatDesLieux::class)->find($id);
+        $edl = $this->edlRepository->findWithFullRelations($id);
 
         if (!$edl) {
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
@@ -43,7 +45,11 @@ class EmailController extends AbstractController
             return new JsonResponse(['error' => 'Email invalide'], Response::HTTP_BAD_REQUEST);
         }
 
-        $this->emailService->sendComparatifEmail($edl, $email);
+        try {
+            $this->emailService->sendComparatifEmail($edl, $email);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => 'Erreur lors de l\'envoi de l\'email'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
 
         return new JsonResponse(['message' => 'Email envoyé avec succès']);
     }
@@ -54,7 +60,7 @@ class EmailController extends AbstractController
         $user = $this->getAuthenticatedUser();
         if ($user instanceof JsonResponse) return $user;
 
-        $edl = $this->em->getRepository(EtatDesLieux::class)->find($id);
+        $edl = $this->edlRepository->findWithFullRelations($id);
 
         if (!$edl) {
             return new JsonResponse(['error' => 'État des lieux non trouvé'], Response::HTTP_NOT_FOUND);
@@ -80,7 +86,11 @@ class EmailController extends AbstractController
             return new JsonResponse(['error' => 'Aucune ligne de devis fournie'], Response::HTTP_BAD_REQUEST);
         }
 
-        $this->emailService->sendEstimationsEmail($edl, $email, $lignes);
+        try {
+            $this->emailService->sendEstimationsEmail($edl, $email, $lignes);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => 'Erreur lors de l\'envoi de l\'email'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
 
         return new JsonResponse(['message' => 'Email envoyé avec succès']);
     }
