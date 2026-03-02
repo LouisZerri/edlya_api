@@ -290,36 +290,39 @@ class AuthController extends AbstractController
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Réinitialisation de mot de passe</title>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0;">Edlya</h1>
-    </div>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+    <div style="background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+        <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #4F46E5;">
+            <div style="font-size: 28px; font-weight: bold; color: #4F46E5;">Edlya</div>
+        </div>
 
-    <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-        <h2 style="color: #333;">Bonjour {$userName},</h2>
+        <h1 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">Réinitialisation de mot de passe</h1>
+
+        <p>Bonjour {$userName},</p>
 
         <p>Vous avez demandé la réinitialisation de votre mot de passe sur Edlya.</p>
 
         <p>Cliquez sur le bouton ci-dessous pour ouvrir l'application et définir un nouveau mot de passe :</p>
 
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="{$deepLink}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-                Ouvrir l'application Edlya
+        <div style="text-align: center; margin: 25px 0;">
+            <a href="{$deepLink}" style="display: inline-block; background-color: #4F46E5; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: 600;">
+                Réinitialiser mon mot de passe
             </a>
         </div>
 
-        <p style="color: #666; font-size: 14px;">
+        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 15px 0; font-size: 14px;">
             Ce lien est valable pendant <strong>1 heure</strong>. Passé ce délai, vous devrez faire une nouvelle demande.
-        </p>
+        </div>
 
-        <p style="color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-            Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email.<br>
+        <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+            Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email.
             Votre mot de passe restera inchangé.
         </p>
-    </div>
 
-    <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
-        © {$year} Edlya - États des lieux simplifiés
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #6b7280;">
+            <p>Cet email a été envoyé automatiquement par Edlya.</p>
+            <p>Si vous n'êtes pas concerné par ce message, veuillez l'ignorer.</p>
+        </div>
     </div>
 </body>
 </html>
