@@ -193,8 +193,8 @@ class AuthController extends AbstractController
         $em->persist($resetToken);
         $em->flush();
 
-        // Générer le lien de réinitialisation
-        $deepLink = 'edlya://reset-password?token=' . $resetToken->getToken();
+        // Lien HTTPS qui redirige vers le deep link (les clients mail bloquent les custom schemes)
+        $resetLink = $request->getSchemeAndHttpHost() . '/api/auth/redirect-reset?token=' . $resetToken->getToken();
 
         // Envoyer l'email
         try {
@@ -202,7 +202,7 @@ class AuthController extends AbstractController
                 ->from($this->fromEmail)
                 ->to($user->getEmail())
                 ->subject('Réinitialisation de votre mot de passe Edlya')
-                ->html($this->renderResetPasswordEmail($user, $deepLink));
+                ->html($this->renderResetPasswordEmail($user, $resetLink));
 
             $mailer->send($emailMessage);
         } catch (\Exception $e) {
@@ -341,9 +341,47 @@ class AuthController extends AbstractController
     }
 
     /**
+     * Page web intermédiaire qui redirige vers le deep link de l'app
+     * Les clients mail bloquent les custom URL schemes (edlya://)
+     * mais autorisent les liens https:// qui redirigent ensuite
+     */
+    #[Route('/api/auth/redirect-reset', name: 'api_auth_redirect_reset', methods: ['GET'])]
+    public function redirectReset(Request $request): Response
+    {
+        $token = $request->query->get('token', '');
+        $deepLink = 'edlya://reset-password?token=' . htmlspecialchars($token, ENT_QUOTES);
+
+        $html = <<<HTML
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edlya - Réinitialisation</title>
+    <meta http-equiv="refresh" content="2;url={$deepLink}">
+</head>
+<body style="font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5;">
+    <div style="text-align: center; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 400px;">
+        <div style="font-size: 28px; font-weight: bold; color: #4F46E5; margin-bottom: 20px;">Edlya</div>
+        <p style="color: #374151; margin-bottom: 20px;">Ouverture de l'application...</p>
+        <a href="{$deepLink}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
+            Ouvrir Edlya
+        </a>
+        <p style="color: #9CA3AF; font-size: 12px; margin-top: 20px;">
+            Si l'application ne s'ouvre pas automatiquement, appuyez sur le bouton ci-dessus.
+        </p>
+    </div>
+</body>
+</html>
+HTML;
+
+        return new Response($html, 200, ['Content-Type' => 'text/html']);
+    }
+
+    /**
      * Génère le contenu HTML de l'email de réinitialisation
      */
-    private function renderResetPasswordEmail(User $user, string $deepLink): string
+    private function renderResetPasswordEmail(User $user, string $resetLink): string
     {
         $userName = htmlspecialchars($user->getName());
         $year = date('Y');
@@ -371,7 +409,7 @@ class AuthController extends AbstractController
         <p>Cliquez sur le bouton ci-dessous pour ouvrir l'application et définir un nouveau mot de passe :</p>
 
         <div style="text-align: center; margin: 25px 0;">
-            <a href="{$deepLink}" style="display: inline-block; background-color: #4F46E5; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: 600;">
+            <a href="{$resetLink}" style="display: inline-block; background-color: #4F46E5; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: 600;">
                 Réinitialiser mon mot de passe
             </a>
         </div>
