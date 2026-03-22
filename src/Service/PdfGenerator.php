@@ -22,7 +22,7 @@ class PdfGenerator
         $options->set('isRemoteEnabled', true);
         $options->set('isHtml5ParserEnabled', true);
         $options->set('chroot', $this->projectDir . '/public');
-        $options->setIsPhpEnabled(true);
+        $options->setIsPhpEnabled(false);
 
         $dompdf = new Dompdf($options);
         $dompdf->setBasePath($this->projectDir . '/public');

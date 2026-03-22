@@ -84,7 +84,13 @@ class PartageController extends AbstractController
 
         $type = $data['type'] ?? 'lien';
         $email = $data['email'] ?? null;
-        $expireDays = $data['expireDays'] ?? 7;
+        $expireDays = (int) ($data['expireDays'] ?? 7);
+
+        if ($expireDays < 1 || $expireDays > 30) {
+            return new JsonResponse([
+                'error' => 'La durée de validité doit être comprise entre 1 et 30 jours'
+            ], Response::HTTP_BAD_REQUEST);
+        }
 
         if ($type === 'email' && empty($email)) {
             return new JsonResponse([

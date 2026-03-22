@@ -20,6 +20,7 @@ class RateLimitListener
         private RateLimiterFactory $apiAiLimiter,
         private RateLimiterFactory $apiUploadLimiter,
         private RateLimiterFactory $apiEmailLimiter,
+        private RateLimiterFactory $apiGraphqlLimiter,
     ) {
     }
 
@@ -36,6 +37,7 @@ class RateLimitListener
                 '/api/register' => $this->authRegisterLimiter,
                 '/api/auth/forgot-password' => $this->authForgotPasswordLimiter,
                 '/api/auth/reset-password' => $this->authResetPasswordLimiter,
+                '/api/token/refresh' => $this->authLoginLimiter,
                 default => null,
             };
 
@@ -47,6 +49,7 @@ class RateLimitListener
 
         // Routes par préfixe (POST et GET)
         $limiter = match (true) {
+            $path === '/api/graphql' => $this->apiGraphqlLimiter,
             str_starts_with($path, '/api/ai/') => $this->apiAiLimiter,
             str_starts_with($path, '/api/upload/') => $this->apiUploadLimiter,
             str_contains($path, '/email/') && str_starts_with($path, '/api/edl/') => $this->apiEmailLimiter,

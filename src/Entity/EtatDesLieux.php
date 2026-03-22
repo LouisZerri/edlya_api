@@ -96,11 +96,11 @@ class EtatDesLieux
     private ?float $depotGarantie = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['edl:read', 'edl:write'])]
+    #[Groups(['edl:read'])]
     private ?string $signatureBailleur = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['edl:read', 'edl:write'])]
+    #[Groups(['edl:read'])]
     private ?string $signatureLocataire = null;
 
     #[ORM\Column(nullable: true)]

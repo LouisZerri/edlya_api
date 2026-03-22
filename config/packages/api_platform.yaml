@@ -8,6 +8,8 @@ api_platform:
             enabled: true
         introspection:
             enabled: true
+        max_query_depth: 15
+        max_query_complexity: 500
 
     defaults:
         pagination_items_per_page: 20

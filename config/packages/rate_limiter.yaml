@@ -41,3 +41,9 @@ framework:
             policy: sliding_window
             limit: 10
             interval: '1 hour'
+
+        # GraphQL : 200 requêtes par minute par IP
+        api_graphql:
+            policy: sliding_window
+            limit: 200
+            interval: '1 minute'

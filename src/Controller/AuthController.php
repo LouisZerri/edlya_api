@@ -3,9 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\PasswordResetToken;
+use App\Entity\RefreshToken;
 use App\Entity\User;
 use App\Repository\PasswordResetTokenRepository;
+use App\Repository\RefreshTokenRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -272,6 +275,69 @@ class AuthController extends AbstractController
             'success' => true,
             'message' => 'Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter.'
         ]);
+    }
+
+    /**
+     * Échange un refresh token contre un nouveau JWT + nouveau refresh token
+     */
+    #[Route('/api/token/refresh', name: 'api_token_refresh', methods: ['POST'])]
+    public function refreshToken(
+        Request $request,
+        EntityManagerInterface $em,
+        RefreshTokenRepository $refreshTokenRepository,
+        JWTTokenManagerInterface $jwtManager
+    ): JsonResponse {
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['refresh_token']) || empty($data['refresh_token'])) {
+            return new JsonResponse(['error' => 'Refresh token requis'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $refreshToken = $refreshTokenRepository->findValidToken($data['refresh_token']);
+
+        if (!$refreshToken) {
+            return new JsonResponse(['error' => 'Refresh token invalide ou expiré'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $user = $refreshToken->getUser();
+
+        // Révoquer l'ancien refresh token (rotation)
+        $refreshToken->setRevokedAt(new \DateTimeImmutable());
+
+        // Créer un nouveau refresh token
+        $newRefreshToken = new RefreshToken();
+        $newRefreshToken->setToken(RefreshToken::generateToken());
+        $newRefreshToken->setUser($user);
+        $newRefreshToken->setExpiresAt(new \DateTimeImmutable('+30 days'));
+
+        $em->persist($newRefreshToken);
+        $em->flush();
+
+        // Générer un nouveau JWT
+        $jwt = $jwtManager->create($user);
+
+        return new JsonResponse([
+            'token' => $jwt,
+            'refresh_token' => $newRefreshToken->getToken(),
+        ]);
+    }
+
+    /**
+     * Révoque tous les refresh tokens de l'utilisateur (logout)
+     */
+    #[Route('/api/logout', name: 'api_logout', methods: ['POST'])]
+    public function logout(
+        RefreshTokenRepository $refreshTokenRepository
+    ): JsonResponse {
+        $user = $this->getUser();
+
+        if (!$user instanceof User) {
+            return new JsonResponse(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $refreshTokenRepository->revokeAllForUser($user);
+
+        return new JsonResponse(['message' => 'Déconnexion réussie']);
     }
 
     /**

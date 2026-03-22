@@ -375,11 +375,12 @@ class AIController extends AbstractController
                 ] : null,
             ]);
         } catch (\Exception $e) {
-            return new JsonResponse([
-                'error' => 'Erreur lors de l\'analyse du PDF. Veuillez réessayer.',
-                'debug' => $e->getMessage(),
-                'trace' => $e->getFile() . ':' . $e->getLine(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $response = ['error' => 'Erreur lors de l\'analyse du PDF. Veuillez réessayer.'];
+            if ($this->getParameter('kernel.debug')) {
+                $response['debug'] = $e->getMessage();
+                $response['trace'] = $e->getFile() . ':' . $e->getLine();
+            }
+            return new JsonResponse($response, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -667,11 +668,12 @@ class AIController extends AbstractController
                 'photos_saved' => count($savedPhotos) === 0 ? count($tempPhotoPaths) : count($tempPhotoPaths) - count($savedPhotos),
             ]);
         } catch (\Exception $e) {
-            return new JsonResponse([
-                'error' => 'Erreur lors de l\'import. Veuillez réessayer.',
-                'debug' => $e->getMessage(),
-                'trace' => $e->getFile() . ':' . $e->getLine(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $response = ['error' => 'Erreur lors de l\'import. Veuillez réessayer.'];
+            if ($this->getParameter('kernel.debug')) {
+                $response['debug'] = $e->getMessage();
+                $response['trace'] = $e->getFile() . ':' . $e->getLine();
+            }
+            return new JsonResponse($response, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
