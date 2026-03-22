@@ -408,11 +408,20 @@ HTML;
 
         <p>Cliquez sur le bouton ci-dessous pour ouvrir l'application et définir un nouveau mot de passe :</p>
 
-        <div style="text-align: center; margin: 25px 0;">
-            <a href="{$resetLink}" style="display: inline-block; background-color: #4F46E5; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: 600;">
-                Réinitialiser mon mot de passe
-            </a>
-        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 25px auto;">
+            <tr>
+                <td style="background-color: #4F46E5; border-radius: 6px;">
+                    <a href="{$resetLink}" target="_blank" style="color: #ffffff; text-decoration: none; padding: 14px 28px; display: block; font-weight: 600; font-size: 16px;">
+                        Réinitialiser mon mot de passe
+                    </a>
+                </td>
+            </tr>
+        </table>
+
+        <p style="text-align: center; font-size: 12px; color: #6b7280;">
+            Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
+            <a href="{$resetLink}" style="color: #4F46E5; word-break: break-all;">{$resetLink}</a>
+        </p>
 
         <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 15px 0; font-size: 14px;">
             Ce lien est valable pendant <strong>1 heure</strong>. Passé ce délai, vous devrez faire une nouvelle demande.
