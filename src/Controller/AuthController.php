@@ -194,7 +194,7 @@ class AuthController extends AbstractController
         $em->flush();
 
         // Lien HTTPS qui redirige vers le deep link (les clients mail bloquent les custom schemes)
-        $resetLink = $request->getSchemeAndHttpHost() . '/api/auth/redirect-reset?token=' . $resetToken->getToken();
+        $resetLink = 'https://api.edlya.fr/api/auth/redirect-reset?token=' . $resetToken->getToken();
 
         // Envoyer l'email
         try {
