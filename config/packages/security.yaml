@@ -48,6 +48,7 @@ security:
         - { path: ^/api/auth/redirect-reset, roles: PUBLIC_ACCESS }
         - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
         - { path: ^/api/graphql, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/admin/create-code, roles: PUBLIC_ACCESS }
         - { path: ^/api/typologies, roles: PUBLIC_ACCESS }
         - { path: ^/api/degradations, roles: PUBLIC_ACCESS }
         - { path: ^/api/partage/, roles: PUBLIC_ACCESS }

@@ -64,6 +64,10 @@ services:
         arguments:
             $openaiApiKey: '%env(OPENAI_API_KEY)%'
 
+    App\Controller\ActivationController:
+        arguments:
+            $adminApiKey: '%env(ADMIN_API_KEY)%'
+
     App\EventListener\AuthenticationSuccessListener:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }

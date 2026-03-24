@@ -104,6 +104,7 @@ class AuthController extends AbstractController
             'email' => $user->getEmail(),
             'name' => $user->getName(),
             'telephone' => $user->getTelephone(),
+            'isVerified' => $user->isVerified(),
         ]);
     }
 

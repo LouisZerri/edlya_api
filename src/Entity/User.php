@@ -57,6 +57,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read'])]
     private bool $isActive = true;
 
+    #[ORM\Column(options: ['default' => false])]
+    #[Groups(['user:read'])]
+    private bool $isVerified = false;
+
     #[ORM\Column(length: 255)]
     #[Groups(['user:read', 'user:write'])]
     #[Assert\NotBlank(message: 'Le nom est obligatoire')]
@@ -183,6 +187,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsActive(bool $isActive): static
     {
         $this->isActive = $isActive;
+        return $this;
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->isVerified;
+    }
+
+    public function setIsVerified(bool $isVerified): static
+    {
+        $this->isVerified = $isVerified;
         return $this;
     }
 
