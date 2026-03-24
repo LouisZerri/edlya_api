@@ -80,11 +80,12 @@ class AuthController extends AbstractController
         $em->flush();
 
         return new JsonResponse([
-            'message' => 'Votre compte a été créé avec succès',
+            'message' => 'Votre compte a été créé avec succès. Il est en attente de validation par un administrateur. Vous serez notifié par email une fois votre compte activé.',
             'user' => [
                 'id' => $user->getId(),
                 'email' => $user->getEmail(),
                 'name' => $user->getName(),
+                'isActive' => false,
             ]
         ], Response::HTTP_CREATED);
     }

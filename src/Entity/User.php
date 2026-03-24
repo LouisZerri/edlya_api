@@ -53,6 +53,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
+    #[ORM\Column(options: ['default' => false])]
+    #[Groups(['user:read'])]
+    private bool $isActive = false;
+
     #[ORM\Column(length: 255)]
     #[Groups(['user:read', 'user:write'])]
     #[Assert\NotBlank(message: 'Le nom est obligatoire')]
@@ -169,6 +173,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials(): void
     {
         // @deprecated, to be removed when upgrading to Symfony 8
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+        return $this;
     }
 
     public function getName(): ?string
