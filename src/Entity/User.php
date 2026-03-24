@@ -53,9 +53,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
-    #[ORM\Column(options: ['default' => false])]
+    #[ORM\Column(options: ['default' => true])]
     #[Groups(['user:read'])]
-    private bool $isActive = false;
+    private bool $isActive = true;
 
     #[ORM\Column(length: 255)]
     #[Groups(['user:read', 'user:write'])]
