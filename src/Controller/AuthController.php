@@ -15,13 +15,15 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
+use Twig\Environment;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 class AuthController extends AbstractController
 {
     public function __construct(
-        private string $fromEmail
+        private string $fromEmail,
+        private Environment $twig
     ) {
     }
 
@@ -29,7 +31,8 @@ class AuthController extends AbstractController
     public function register(
         Request $request,
         EntityManagerInterface $em,
-        UserPasswordHasherInterface $passwordHasher
+        UserPasswordHasherInterface $passwordHasher,
+        MailerInterface $mailer
     ): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
@@ -78,6 +81,20 @@ class AuthController extends AbstractController
 
         $em->persist($user);
         $em->flush();
+
+        // Notifier les admins par email (ne bloque pas la réponse en cas d'échec)
+        try {
+            $notification = (new Email())
+                ->from($this->fromEmail)
+                ->to('l.zerri@gmail.com', 'bdealmeida@gestimmo-france.fr')
+                ->subject('Edlya — Nouvelle inscription : ' . $user->getName())
+                ->html($this->twig->render('emails/new_user_notification.html.twig', [
+                    'user' => $user,
+                ]));
+            $mailer->send($notification);
+        } catch (\Exception $e) {
+            // Logger l'erreur mais ne pas bloquer l'inscription
+        }
 
         return new JsonResponse([
             'message' => 'Votre compte a été créé avec succès. Il est en attente de validation par un administrateur. Vous serez notifié par email une fois votre compte activé.',

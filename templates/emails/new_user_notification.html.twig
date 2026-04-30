@@ -1,0 +1,26 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Nouvelle inscription Edlya{% endblock %}
+
+{% block content %}
+    <h1>Nouvelle inscription sur Edlya</h1>
+
+    <p>
+        Un nouvel utilisateur vient de s'inscrire sur l'application Edlya et attend de recevoir son code d'activation.
+    </p>
+
+    <div class="info-box">
+        <strong>Nom :</strong> {{ user.name }}<br>
+        <strong>Email :</strong> {{ user.email }}<br>
+        {% if user.telephone %}<strong>Téléphone :</strong> {{ user.telephone }}<br>{% endif %}
+        <strong>Date d'inscription :</strong> {{ user.createdAt|date('d/m/Y à H:i') }}
+    </div>
+
+    <div class="warning">
+        <strong>Action requise :</strong> Connectez-vous à l'admin Gestimmo pour générer un code d'activation pour cet utilisateur.
+    </div>
+
+    <p style="margin-top: 25px; color: #6b7280;">
+        L'utilisateur ne pourra accéder à l'application qu'après avoir reçu et saisi son code d'activation.
+    </p>
+{% endblock %}
